@@ -2,20 +2,19 @@
 /**
  * Login Page - Desktop Application Style
  * 
- * Simple authentication for the EMS system.
+ * Secure authentication using database and bcrypt.
  */
 
 session_start();
 
-// If already logged in, redirect to dashboard
+// Include database connection
+require_once __DIR__ . '/includes/db.php';
+
+// If already logged in, redirect to students page
 if (isset($_SESSION['user_logged_in']) && $_SESSION['user_logged_in'] === true) {
-    header('Location: index.php');
+    header('Location: pages/students.php');
     exit;
 }
-
-// Default credentials (in real app, use database)
-$valid_username = 'admin';
-$valid_password = 'admin123';
 
 $error = '';
 
@@ -24,15 +23,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $username = trim($_POST['username'] ?? '');
     $password = $_POST['password'] ?? '';
     
-    if ($username === $valid_username && $password === $valid_password) {
-        $_SESSION['user_logged_in'] = true;
-        $_SESSION['username'] = $username;
-        $_SESSION['login_time'] = time();
-        
-        header('Location: index.php');
-        exit;
+    if (empty($username) || empty($password)) {
+        $error = 'Please enter both username and password';
     } else {
-        $error = 'Invalid username or password';
+        // Look up user in database
+        try {
+            $sql = "SELECT * FROM users WHERE username = :username AND is_active = 1";
+            $stmt = $db->prepare($sql);
+            $stmt->execute(['username' => $username]);
+            $user = $stmt->fetch();
+            
+            if ($user && password_verify($password, $user['password'])) {
+                // Password is correct - create session
+                $_SESSION['user_logged_in'] = true;
+                $_SESSION['user_id'] = $user['id'];
+                $_SESSION['username'] = $user['username'];
+                $_SESSION['user_role'] = $user['role'];
+                $_SESSION['full_name'] = $user['full_name'];
+                $_SESSION['login_time'] = time();
+                
+                // Update last login time
+                $updateSql = "UPDATE users SET last_login = NOW() WHERE id = :id";
+                $updateStmt = $db->prepare($updateSql);
+                $updateStmt->execute(['id' => $user['id']]);
+                
+                header('Location: pages/students.php');
+                exit;
+            } else {
+                $error = 'Invalid username or password';
+            }
+        } catch (PDOException $e) {
+            $error = 'Database error. Please try again.';
+        }
     }
 }
 ?>
@@ -53,7 +75,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         body {
             font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
-            background-color: #1a1a1a;
+            background-color: #f3f4f6;
             min-height: 100vh;
             display: flex;
             align-items: center;
@@ -62,35 +84,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         .login-container {
             width: 100%;
-            max-width: 400px;
+            max-width: 420px;
             padding: 20px;
         }
         
         .login-box {
-            background-color: #2d2d2d;
-            border: 1px solid #3c3c3c;
-            border-radius: 8px;
+            background-color: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
             overflow: hidden;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
         }
         
         .login-header {
-            background-color: #252526;
-            padding: 24px;
+            background-color: #f9fafb;
+            padding: 28px 24px;
             text-align: center;
-            border-bottom: 1px solid #3c3c3c;
+            border-bottom: 1px solid #e5e7eb;
         }
         
         .login-logo {
             width: 64px;
             height: 64px;
             background: linear-gradient(135deg, #0078d4, #00a8ff);
-            border-radius: 12px;
+            border-radius: 14px;
             display: flex;
             align-items: center;
             justify-content: center;
             margin: 0 auto 16px;
-            box-shadow: 0 4px 16px rgba(0, 120, 212, 0.3);
+            box-shadow: 0 4px 14px rgba(0, 120, 212, 0.25);
         }
         
         .login-logo i {
@@ -99,30 +121,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         
         .login-header h1 {
-            font-size: 18px;
+            font-size: 20px;
             font-weight: 600;
-            color: #e0e0e0;
+            color: #111827;
             margin-bottom: 4px;
         }
         
         .login-header p {
-            font-size: 12px;
-            color: #9d9d9d;
+            font-size: 13px;
+            color: #6b7280;
         }
         
         .login-body {
-            padding: 24px;
+            padding: 28px 24px;
         }
         
         .form-group {
-            margin-bottom: 16px;
+            margin-bottom: 18px;
         }
         
         .form-group label {
             display: block;
-            font-size: 12px;
+            font-size: 13px;
             font-weight: 500;
-            color: #9d9d9d;
+            color: #374151;
             margin-bottom: 6px;
         }
         
@@ -135,55 +157,56 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             left: 12px;
             top: 50%;
             transform: translateY(-50%);
-            color: #6d6d6d;
+            color: #9ca3af;
             font-size: 14px;
         }
         
         .form-control {
             width: 100%;
-            padding: 10px 12px 10px 38px;
-            font-size: 13px;
+            padding: 11px 12px 11px 40px;
+            font-size: 14px;
             font-family: inherit;
-            background-color: #3c3c3c;
-            border: 1px solid #5c5c5c;
-            border-radius: 4px;
-            color: #e0e0e0;
+            background-color: #f9fafb;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            color: #111827;
             transition: all 0.15s ease;
         }
         
         .form-control:focus {
             outline: none;
             border-color: #0078d4;
-            box-shadow: 0 0 0 2px rgba(0, 120, 212, 0.2);
+            background-color: #ffffff;
+            box-shadow: 0 0 0 3px rgba(0, 120, 212, 0.12);
         }
         
         .form-control::placeholder {
-            color: #6d6d6d;
+            color: #9ca3af;
         }
         
         .error-message {
-            background-color: rgba(244, 67, 54, 0.1);
-            border: 1px solid rgba(244, 67, 54, 0.3);
-            color: #f44336;
-            padding: 10px 12px;
-            border-radius: 4px;
-            font-size: 12px;
-            margin-bottom: 16px;
+            background-color: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #dc2626;
+            padding: 12px 14px;
+            border-radius: 8px;
+            font-size: 13px;
+            margin-bottom: 18px;
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
         }
         
         .btn-login {
             width: 100%;
-            padding: 10px 16px;
-            font-size: 13px;
-            font-weight: 500;
+            padding: 12px 16px;
+            font-size: 14px;
+            font-weight: 600;
             font-family: inherit;
             background-color: #0078d4;
             color: white;
             border: none;
-            border-radius: 4px;
+            border-radius: 8px;
             cursor: pointer;
             transition: all 0.15s ease;
             display: flex;
@@ -194,6 +217,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         .btn-login:hover {
             background-color: #106ebe;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 120, 212, 0.25);
         }
         
         .btn-login:active {
@@ -202,33 +227,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         .login-footer {
             padding: 16px 24px;
-            background-color: #252526;
-            border-top: 1px solid #3c3c3c;
+            background-color: #f9fafb;
+            border-top: 1px solid #e5e7eb;
             text-align: center;
         }
         
         .login-footer p {
-            font-size: 11px;
-            color: #6d6d6d;
+            font-size: 12px;
+            color: #6b7280;
         }
         
         .credentials-hint {
-            background-color: #3c3c3c;
-            padding: 12px;
-            border-radius: 4px;
-            margin-top: 16px;
+            background-color: #f0f9ff;
+            border: 1px solid #bae6fd;
+            padding: 14px;
+            border-radius: 8px;
+            margin-top: 18px;
         }
         
         .credentials-hint p {
-            font-size: 11px;
-            color: #9d9d9d;
+            font-size: 12px;
+            color: #0369a1;
             margin-bottom: 4px;
         }
         
         .credentials-hint code {
             font-family: 'Consolas', monospace;
-            color: #4caf50;
-            font-size: 11px;
+            background-color: #e0f2fe;
+            color: #0c4a6e;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 12px;
         }
     </style>
 </head>

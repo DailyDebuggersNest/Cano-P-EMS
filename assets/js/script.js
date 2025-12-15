@@ -170,41 +170,29 @@ function validateStudentForm(form) {
 }
 
 /**
- * Validate the course form
+ * Validate the program form
  * @param {HTMLFormElement} form - The form element
  * @returns {boolean} - Is the form valid?
  */
-function validateCourseForm(form) {
+function validateProgramForm(form) {
     let isValid = true;
     
-    // Check course code
-    const courseCode = form.querySelector('[name="course_code"]');
-    if (!courseCode.value.trim()) {
-        showError(courseCode, 'Course code is required');
+    // Check program code
+    const programCode = form.querySelector('[name="program_code"]');
+    if (programCode && !programCode.value.trim()) {
+        showError(programCode, 'Program code is required');
         isValid = false;
-    } else {
-        clearError(courseCode);
+    } else if (programCode) {
+        clearError(programCode);
     }
     
-    // Check course name
-    const courseName = form.querySelector('[name="course_name"]');
-    if (!courseName.value.trim()) {
-        showError(courseName, 'Course name is required');
+    // Check program name
+    const programName = form.querySelector('[name="program_name"]');
+    if (programName && !programName.value.trim()) {
+        showError(programName, 'Program name is required');
         isValid = false;
-    } else {
-        clearError(courseName);
-    }
-    
-    // Check credits (if provided)
-    const credits = form.querySelector('[name="credits"]');
-    if (credits && credits.value) {
-        const creditValue = parseInt(credits.value);
-        if (isNaN(creditValue) || creditValue < 1 || creditValue > 10) {
-            showError(credits, 'Credits must be between 1 and 10');
-            isValid = false;
-        } else {
-            clearError(credits);
-        }
+    } else if (programName) {
+        clearError(programName);
     }
     
     return isValid;
@@ -225,41 +213,41 @@ function confirmDelete(itemType, itemName, deleteUrl) {
     // Create overlay
     const overlay = document.createElement('div');
     overlay.className = 'dialog-overlay';
-    overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:1000;';
+    overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;z-index:1000;';
     
     // Create dialog
     const dialog = document.createElement('div');
     dialog.className = 'dialog';
-    dialog.style.cssText = 'background:#2d2d2d;border:1px solid #3c3c3c;border-radius:4px;min-width:380px;max-width:90%;box-shadow:0 8px 32px rgba(0,0,0,0.3);';
+    dialog.style.cssText = 'background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;min-width:400px;max-width:90%;box-shadow:0 20px 25px -5px rgba(0,0,0,0.1),0 8px 10px -6px rgba(0,0,0,0.1);';
     
     dialog.innerHTML = `
-        <div style="padding:12px 16px;border-bottom:1px solid #3c3c3c;display:flex;justify-content:space-between;align-items:center;">
-            <h3 style="font-size:14px;font-weight:600;color:#e0e0e0;display:flex;align-items:center;gap:8px;">
-                <i class="fas fa-exclamation-triangle" style="color:#f44336;"></i>
+        <div style="padding:16px 20px;border-bottom:1px solid #e5e7eb;display:flex;justify-content:space-between;align-items:center;">
+            <h3 style="font-size:16px;font-weight:600;color:#111827;display:flex;align-items:center;gap:10px;">
+                <i class="fas fa-exclamation-triangle" style="color:#dc2626;"></i>
                 Confirm Delete
             </h3>
-            <button onclick="this.closest('.dialog-overlay').remove()" style="background:none;border:none;color:#9d9d9d;cursor:pointer;font-size:16px;">
+            <button onclick="this.closest('.dialog-overlay').remove()" style="background:none;border:none;color:#6b7280;cursor:pointer;font-size:18px;padding:4px;">
                 <i class="fas fa-times"></i>
             </button>
         </div>
-        <div style="padding:20px 16px;">
-            <p style="color:#e0e0e0;font-size:13px;margin-bottom:8px;">
+        <div style="padding:24px 20px;">
+            <p style="color:#374151;font-size:14px;margin-bottom:12px;">
                 Are you sure you want to delete this ${itemType}?
             </p>
-            <p style="color:#9d9d9d;font-size:12px;background:#3c3c3c;padding:8px 12px;border-radius:2px;margin:12px 0;">
+            <p style="color:#111827;font-size:13px;background:#f3f4f6;padding:10px 14px;border-radius:8px;margin:16px 0;border:1px solid #e5e7eb;">
                 "${itemName}"
             </p>
-            <p style="color:#f44336;font-size:11px;">
+            <p style="color:#dc2626;font-size:12px;display:flex;align-items:center;gap:6px;">
                 <i class="fas fa-info-circle"></i> This action cannot be undone.
             </p>
         </div>
-        <div style="padding:12px 16px;border-top:1px solid #3c3c3c;display:flex;justify-content:flex-end;gap:8px;">
+        <div style="padding:16px 20px;border-top:1px solid #e5e7eb;display:flex;justify-content:flex-end;gap:10px;background:#f9fafb;">
             <button onclick="this.closest('.dialog-overlay').remove()" 
-                    style="padding:6px 12px;font-size:12px;font-weight:500;background:#3c3c3c;color:#e0e0e0;border:1px solid #5c5c5c;border-radius:2px;cursor:pointer;">
+                    style="padding:8px 16px;font-size:13px;font-weight:500;background:#ffffff;color:#374151;border:1px solid #d1d5db;border-radius:8px;cursor:pointer;">
                 Cancel
             </button>
             <button onclick="window.location.href='${deleteUrl}'" 
-                    style="padding:6px 12px;font-size:12px;font-weight:500;background:#f44336;color:white;border:1px solid #f44336;border-radius:2px;cursor:pointer;">
+                    style="padding:8px 16px;font-size:13px;font-weight:500;background:#dc2626;color:white;border:none;border-radius:8px;cursor:pointer;">
                 <i class="fas fa-trash"></i> Delete
             </button>
         </div>
@@ -332,11 +320,11 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
-    // Add form validation to course forms
-    const courseForms = document.querySelectorAll('form[data-validate="course"]');
-    courseForms.forEach(function(form) {
+    // Add form validation to program forms
+    const programForms = document.querySelectorAll('form[data-validate="program"]');
+    programForms.forEach(function(form) {
         form.addEventListener('submit', function(e) {
-            if (!validateCourseForm(form)) {
+            if (!validateProgramForm(form)) {
                 e.preventDefault();
             }
         });
@@ -367,6 +355,55 @@ function formatDate(dateString) {
  */
 function capitalize(str) {
     return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+// ============================================
+// COLLAPSIBLE SEMESTER BLOCKS
+// Toggle academic history semester details
+// ============================================
+
+/**
+ * Toggle a semester block's expanded/collapsed state
+ * @param {number} index - The index of the semester block
+ */
+function toggleSemester(index) {
+    const block = document.getElementById('semester-block-' + index);
+    if (block) {
+        block.classList.toggle('collapsed');
+        block.classList.toggle('expanded');
+    }
+}
+
+/**
+ * Toggle a payment block's expanded/collapsed state
+ * @param {number} index - The index of the payment block
+ */
+function togglePaymentBlock(index) {
+    const block = document.getElementById('payment-block-' + index);
+    if (block) {
+        block.classList.toggle('collapsed');
+        block.classList.toggle('expanded');
+    }
+}
+
+/**
+ * Expand all semester blocks
+ */
+function expandAllSemesters() {
+    document.querySelectorAll('.semester-block').forEach(block => {
+        block.classList.remove('collapsed');
+        block.classList.add('expanded');
+    });
+}
+
+/**
+ * Collapse all semester blocks
+ */
+function collapseAllSemesters() {
+    document.querySelectorAll('.semester-block').forEach(block => {
+        block.classList.add('collapsed');
+        block.classList.remove('expanded');
+    });
 }
 
 // ============================================
