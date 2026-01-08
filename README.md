@@ -1,40 +1,59 @@
-# Enrollment Management System (EMS)
+# EMS Pro - Student Information System
 
-A simple, beginner-friendly Enrollment Management System built with PHP, MySQL, CSS, and JavaScript.
+A modern, professional Student Information System built with PHP, MySQL, CSS, and JavaScript. Features a desktop application-style interface with comprehensive student management.
 
 ## Features
 
-- **Student Management**: Add, view, edit, and delete students
-- **Course Management**: Add, view, edit, and delete courses  
-- **Enrollment System**: Enroll students in courses (many-to-many relationship)
-- **Dashboard**: Quick overview with stats and recent activity
-- **Clean UI**: Modern, responsive design that works on all devices
-- **Font Awesome Icons**: Professional iconography throughout the interface
+### Core Features
+- **Student Management**: Complete student profiling with bio-data capture
+- **Enrollment History**: Track student enrollments across semesters with grades
+- **Payment Tracking**: Full payment history with multiple payment methods
+- **Secure Login**: Bcrypt password hashing with session management
+- **Desktop UI**: Modern sidebar navigation with collapsible menu
+
+### Student Profile
+- Personal Information (Name, DOB, Sex, Civil Status, Nationality)
+- Contact Details (Email, Phone)
+- Complete Address (Street, Barangay, City, Province, ZIP)
+- Guardian/Emergency Contact Information
+- Academic Information (Program, Year Level, Section)
+
+### Academic Tracking
+- Enrollment history across all semesters
+- Subject grades with GWA calculation
+- Units tracking (current and total)
+
+### Payment System
+- Multiple payment types (Tuition, Lab Fees, Miscellaneous, NSTP, etc.)
+- Payment status tracking (Paid, Partial, Unpaid, Overdue)
+- Multiple payment methods (Cash, Bank Transfer, GCash, Installment, Scholarship)
 
 ## Project Structure
 
 ```
-EMS-starter/
+Cano-P-EMS/
 ├── assets/
 │   ├── css/
-│   │   └── style.css       # All the styling
+│   │   └── style.css          # Desktop app styling
 │   └── js/
-│       └── script.js       # JavaScript for interactions
+│       └── script.js          # Interactive features
 ├── includes/
-│   ├── db.php              # Database connection
-│   └── functions.php       # Helper functions (CRUD operations)
-├── templates/
-│   ├── header.php          # HTML head section
-│   ├── navbar.php          # Navigation bar
-│   └── footer.php          # Page footer
+│   ├── auth.php               # Authentication check
+│   ├── db.php                 # Database connection
+│   └── functions.php          # Helper functions (CRUD, utilities)
 ├── pages/
-│   ├── students.php        # Student management page
-│   ├── courses.php         # Course management page
-│   └── enrollments.php     # Enrollment management page
+│   └── students.php           # Student management (list, view, add, edit)
 ├── sql/
-│   └── database.sql        # Database schema + sample data
-├── index.php               # Dashboard/home page
-└── README.md               # You're reading it!
+│   ├── sis_schema.sql         # Database schema (tables, indexes)
+│   └── sis_sample_data.sql    # Sample data (20 students with history)
+├── templates/
+│   ├── header.php             # Page header with authentication
+│   └── sidebar.php            # Sidebar navigation
+├── favicon.svg                # Application icon
+├── index.php                  # Entry point (redirects to students)
+├── login.php                  # Login page
+├── logout.php                 # Logout handler
+└── README.md                  # Documentation
 ```
 
 ## Setup Instructions
@@ -42,16 +61,16 @@ EMS-starter/
 ### Prerequisites
 
 - **XAMPP** (or similar: WAMP, MAMP, Laragon)
-- **Web Browser** (Chrome, Firefox, Edge, etc.)
+- **Web Browser** (Chrome, Firefox, Edge)
+- PHP 7.4+ with PDO extension
+- MySQL 5.7+
 
 ### Step-by-Step Setup
 
-1. **Copy the project folder**
+1. **Copy project folder**
    
-   Copy the `EMS-starter` folder to your web server's document root:
-   - XAMPP: `C:\xampp\htdocs\`
-   - WAMP: `C:\wamp64\www\`
-   - MAMP: `/Applications/MAMP/htdocs/`
+   Copy to your web server's document root:
+   - XAMPP: `C:\xampp\htdocs\Cano-P-EMS\`
 
 2. **Start your local server**
    
@@ -61,96 +80,110 @@ EMS-starter/
 
 3. **Create the database**
    
-   - Open phpMyAdmin: http://localhost/phpmyadmin
-   - Click "Import" tab
-   - Choose the file: `sql/database.sql`
-   - Click "Go" to import
+   Option A - Using Command Line:
+   ```bash
+   mysql -u root -e "CREATE DATABASE IF NOT EXISTS ems_O6"
+   mysql -u root ems_O6 < sql/sis_schema.sql
+   mysql -u root ems_O6 < sql/sis_sample_data.sql
+   ```
    
-   Or manually:
-   - Create a new database called `ems_database`
-   - Run the SQL commands from `sql/database.sql`
+   Option B - Using phpMyAdmin:
+   - Open http://localhost/phpmyadmin
+   - Create database: `ems_O6`
+   - Import `sql/sis_schema.sql` first
+   - Import `sql/sis_sample_data.sql` second
 
 4. **Configure database connection** (if needed)
    
-   Open `includes/db.php` and update these if your setup is different:
+   Edit `includes/db.php`:
    ```php
    define('DB_HOST', 'localhost');
    define('DB_USERNAME', 'root');
-   define('DB_PASSWORD', '');  // Default XAMPP has no password
-   define('DB_NAME', 'ems_database');
+   define('DB_PASSWORD', '');
+   define('DB_NAME', 'ems_O6');
    ```
 
 5. **Open in browser**
    
-   Visit: http://localhost/EMS-starter/
+   Visit: http://localhost/Cano-P-EMS/
+
+### Default Login Credentials
+
+| Username | Password | Role |
+|----------|----------|------|
+| admin    | admin123 | Admin |
+| staff    | staff123 | Staff |
 
 ## How to Use
 
 ### Managing Students
-1. Click "Students" in the navigation
-2. Click "Add Student" to create a new student
-3. Use "Edit" to modify or "Delete" to remove
+1. Login with your credentials
+2. View the student list with search and filters
+3. Click a student row to view their complete profile
+4. Use tabs to switch between Overview, Subjects, and Payments
+5. Use "Add Student" to create new records
 
-### Managing Courses
-1. Click "Courses" in the navigation
-2. Click "Add Course" to create a new course
-3. Use "Edit" to modify or "Delete" to remove
+### Viewing Enrollment History
+1. Open a student's profile
+2. Click the "Subjects" tab
+3. Use the dropdown to select a specific semester or "Show All"
+4. View grades, units, and GWA for each term
 
-### Creating Enrollments
-1. Click "Enrollments" in the navigation
-2. Click "New Enrollment"
-3. Select a student and a course
-4. Click "Enroll Student"
+### Viewing Payment History
+1. Open a student's profile
+2. Click the "Payments" tab
+3. Use the dropdown to select a specific term or "Show All"
+4. View payment details, amounts, and status
+
+## Database Schema
+
+### Main Tables
+- `students` - Student personal and academic information
+- `programs` - Available degree programs
+- `subjects` - Course catalog with units
+- `enrollments` - Student-subject enrollments with grades
+- `payments` - Payment records with status
+- `payment_types` - Fee categories
+- `users` - System users with roles
 
 ## Customization
 
 ### Changing Colors
-Edit `assets/css/style.css` and modify the CSS variables at the top:
+Edit `assets/css/style.css`:
 ```css
 :root {
-    --primary-color: #4f46e5;    /* Change this for a different theme */
-    --success-color: #10b981;
-    --danger-color: #ef4444;
-    /* ... etc */
+    --primary-color: #0078d4;
+    --success-color: #059669;
+    --danger-color: #dc2626;
 }
 ```
 
-### Adding New Fields
-1. Update the database table in phpMyAdmin
-2. Add the field to the form in the respective page
-3. Update the functions in `includes/functions.php`
+### Adding New Programs
+Insert into `programs` table via phpMyAdmin or SQL.
 
 ## Troubleshooting
 
 **"Couldn't connect to database" error**
-- Make sure MySQL is running in XAMPP
-- Check that the database `ems_database` exists
-- Verify credentials in `includes/db.php`
+- Ensure MySQL is running in XAMPP
+- Verify database `ems_O6` exists
+- Check credentials in `includes/db.php`
 
-**Blank page / PHP errors**
-- Enable PHP error display in `php.ini` for debugging
-- Check Apache error logs in XAMPP
+**Login not working**
+- Re-import `sis_sample_data.sql` to reset users
+- Clear browser cookies/cache
 
 **Styles not loading**
-- Make sure you're accessing via localhost, not file://
-- Clear browser cache
+- Access via localhost, not file://
+- Clear browser cache (Ctrl+Shift+R)
 
-## Learning Resources
+## Technologies Used
 
-This project is perfect for learning:
-- **PHP basics**: Variables, functions, forms, sessions
-- **MySQL**: CRUD operations, JOINs, relationships
-- **PDO**: Secure database queries with prepared statements
-- **CSS**: Modern layouts with Flexbox and Grid
-- **JavaScript**: Form validation, DOM manipulation
-
-## Contributing
-
-This is a learning project! Feel free to:
-- Add new features
-- Improve the code
-- Fix bugs
-- Share with others
+- **PHP 7.4+**: Backend logic with PDO
+- **MySQL**: Relational database
+- **CSS3**: Modern styling with CSS variables
+- **JavaScript**: Interactive features
+- **Font Awesome 6**: Icon library
+- **bcrypt**: Secure password hashing
 
 ## License
 
@@ -158,4 +191,4 @@ Free to use for learning and personal projects.
 
 ---
 
-Built for learning PHP
+**EMS Pro** - Student Information System

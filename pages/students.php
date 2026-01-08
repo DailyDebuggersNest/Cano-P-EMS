@@ -433,10 +433,6 @@ include __DIR__ . '/../templates/sidebar.php';
                                     <div class="table-actions">
                                         <a href="students.php?action=view&id=<?php echo $student['id']; ?>" 
                                            class="btn btn-outline btn-sm" title="View Profile"><i class="fas fa-eye"></i></a>
-                                        <a href="students.php?action=edit&id=<?php echo $student['id']; ?>" 
-                                           class="btn btn-secondary btn-sm" title="Edit"><i class="fas fa-edit"></i></a>
-                                        <button onclick="confirmDelete('student', '<?php echo sanitize(getStudentFullName($student, 'short')); ?>', 'students.php?action=delete&id=<?php echo $student['id']; ?>')"
-                                                class="btn btn-danger btn-sm" title="Delete"><i class="fas fa-trash"></i></button>
                                     </div>
                                 </td>
                             </tr>
@@ -524,17 +520,11 @@ include __DIR__ . '/../templates/sidebar.php';
            class="profile-tab <?php echo $activeTab === 'subjects' ? 'active' : ''; ?>">
             <i class="fas fa-book"></i>
             <span>Subjects</span>
-            <?php if ($enrollmentStats['total_subjects'] > 0): ?>
-                <span class="tab-badge badge-success"><?php echo $enrollmentStats['total_subjects']; ?></span>
-            <?php endif; ?>
         </a>
         <a href="students.php?action=view&id=<?php echo $student['id']; ?>&tab=payments" 
            class="profile-tab <?php echo $activeTab === 'payments' ? 'active' : ''; ?>">
             <i class="fas fa-money-bill-wave"></i>
             <span>Payments</span>
-            <?php if ($paymentSummary['balance'] > 0): ?>
-                <span class="tab-badge badge-warning"><?php echo $paymentSummary['unpaid_count'] + $paymentSummary['partial_count']; ?></span>
-            <?php endif; ?>
         </a>
     </div>
     
@@ -707,176 +697,42 @@ include __DIR__ . '/../templates/sidebar.php';
         <!-- ==================== SUBJECTS TAB ==================== -->
         <div class="subjects-tab-content">
             
-            <!-- Academic Performance Summary -->
-            <div class="academic-overview">
-                <h4 class="section-title"><i class="fas fa-chart-bar"></i> Academic Summary</h4>
-                <div class="enrollment-summary-cards">
-                    <div class="summary-stat-card">
-                        <div class="stat-icon bg-primary"><i class="fas fa-book"></i></div>
-                        <div class="stat-content">
-                            <span class="stat-number"><?php echo $enrollmentStats['total_subjects']; ?></span>
-                            <span class="stat-text">Total Subjects Taken</span>
-                        </div>
-                    </div>
-                    <div class="summary-stat-card">
-                        <div class="stat-icon bg-success"><i class="fas fa-check-circle"></i></div>
-                        <div class="stat-content">
-                            <span class="stat-number"><?php echo $enrollmentStats['passed_subjects']; ?></span>
-                            <span class="stat-text">Subjects Passed</span>
-                        </div>
-                    </div>
-                    <div class="summary-stat-card">
-                        <div class="stat-icon bg-danger"><i class="fas fa-times-circle"></i></div>
-                        <div class="stat-content">
-                            <span class="stat-number"><?php echo $enrollmentStats['failed_subjects']; ?></span>
-                            <span class="stat-text">Subjects Failed</span>
-                        </div>
-                    </div>
-                    <div class="summary-stat-card">
-                        <div class="stat-icon bg-info"><i class="fas fa-calculator"></i></div>
-                        <div class="stat-content">
-                            <span class="stat-number"><?php echo $enrollmentStats['total_units']; ?></span>
-                            <span class="stat-text">Units Earned</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Recent/Current Semester Subjects -->
-            <div class="panel">
-                <div class="panel-header">
-                    <h3><i class="fas fa-graduation-cap"></i> Recent Semester Grades</h3>
-                    <div class="panel-header-actions">
-                        <span class="semester-info"><?php echo $student['semester']; ?> • <?php echo $student['year_level']; ?></span>
-                    </div>
-                </div>
-                <div class="panel-body">
-                    <?php if (empty($enrollments)): ?>
-                        <div class="empty-state-small">
-                            <i class="fas fa-book-open"></i>
-                            <p>No subjects enrolled for the current semester.</p>
-                        </div>
-                    <?php else: ?>
-                        <div class="table-container">
-                            <table class="data-table grades-table">
-                                <thead>
-                                    <tr>
-                                        <th style="width: 50px;">#</th>
-                                        <th style="width: 120px;">Code</th>
-                                        <th>Subject</th>
-                                        <th style="width: 70px;" class="text-center">Units</th>
-                                        <th style="width: 80px;" class="text-center">Grade</th>
-                                        <th style="width: 100px;">Remarks</th>
-                                        <th style="width: 90px;" class="text-center">Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php $num = 1; foreach ($enrollments as $enrollment): ?>
-                                        <tr>
-                                            <td class="text-center"><?php echo $num++; ?></td>
-                                            <td><code class="subject-code-badge"><?php echo sanitize($enrollment['subject_code']); ?></code></td>
-                                            <td>
-                                                <strong><?php echo sanitize($enrollment['subject_name']); ?></strong>
-                                                <div class="subject-hours">
-                                                    <small><i class="fas fa-clock"></i> <?php echo $enrollment['lecture_hours']; ?> Lec / <?php echo $enrollment['lab_hours']; ?> Lab hrs</small>
-                                                </div>
-                                            </td>
-                                            <td class="text-center"><span class="units-badge"><?php echo $enrollment['units']; ?></span></td>
-                                            <td class="text-center">
-                                                <?php if ($enrollment['grade'] !== null): ?>
-                                                    <span class="grade-pill <?php echo $enrollment['grade'] <= 3.0 ? 'grade-pass' : 'grade-fail'; ?>">
-                                                        <?php echo number_format($enrollment['grade'], 2); ?>
-                                                    </span>
-                                                <?php else: ?>
-                                                    <span class="grade-pill grade-pending">—</span>
-                                                <?php endif; ?>
-                                            </td>
-                                            <td>
-                                                <?php if ($enrollment['grade'] !== null): ?>
-                                                    <span class="remarks-text"><?php echo getGradeDescription($enrollment['grade']); ?></span>
-                                                <?php else: ?>
-                                                    <span class="remarks-text text-muted">In Progress</span>
-                                                <?php endif; ?>
-                                            </td>
-                                            <td class="text-center">
-                                                <?php 
-                                                $statusClass = 'pending';
-                                                switch ($enrollment['grade_status']) {
-                                                    case 'Passed': $statusClass = 'active'; break;
-                                                    case 'Failed': $statusClass = 'dropped'; break;
-                                                    case 'Incomplete': $statusClass = 'pending'; break;
-                                                    case 'Dropped': case 'Withdrawn': $statusClass = 'dropped'; break;
-                                                }
-                                                ?>
-                                                <span class="status-badge status-<?php echo $statusClass; ?>">
-                                                    <?php echo sanitize($enrollment['grade_status']); ?>
-                                                </span>
-                                            </td>
-                                        </tr>
-                                    <?php endforeach; ?>
-                                </tbody>
-                                <tfoot>
-                                    <tr class="table-summary-row">
-                                        <td colspan="3" class="text-right"><strong>Semester Total:</strong></td>
-                                        <td class="text-center"><strong class="total-units"><?php echo $enrollmentStats['current_units']; ?> units</strong></td>
-                                        <td colspan="3"></td>
-                                    </tr>
-                                </tfoot>
-                            </table>
-                        </div>
-                    <?php endif; ?>
-                </div>
-            </div>
-            
-            <!-- Complete Academic History - Organized by Year Level -->
+            <!-- Enrollment History - Dropdown Selector -->
             <?php 
             $allEnrollments = getStudentEnrollments($student['id']); 
             
             // Group enrollments by Year Level and Semester
             $groupedEnrollments = [];
             foreach ($allEnrollments as $enrollment) {
-                // Determine year level based on academic year and student's admission
                 $academicYear = $enrollment['academic_year'];
                 $semester = $enrollment['semester'];
-                
-                // Parse enrollment year from academic_year (e.g., "2023-2024" -> 2023)
                 $enrollYear = (int)substr($academicYear, 0, 4);
-                
-                // Parse admission year from student's admission_date
                 $admissionYear = !empty($student['admission_date']) ? (int)date('Y', strtotime($student['admission_date'])) : $enrollYear;
-                
-                // Calculate year level: Year 1 = admission year, Year 2 = admission year + 1, etc.
                 $yearDiff = $enrollYear - $admissionYear;
-                
-                // Adjust for 2nd semester (still same year level as 1st sem)
                 $yearLevel = $yearDiff + 1;
                 if ($yearLevel < 1) $yearLevel = 1;
                 if ($yearLevel > 5) $yearLevel = 5;
                 
                 $yearLevelText = match($yearLevel) {
-                    1 => '1st Year',
-                    2 => '2nd Year',
-                    3 => '3rd Year',
-                    4 => '4th Year',
-                    5 => '5th Year',
-                    default => '1st Year'
+                    1 => '1st Year', 2 => '2nd Year', 3 => '3rd Year', 4 => '4th Year', 5 => '5th Year', default => '1st Year'
                 };
                 
-                $key = $yearLevelText . '|' . $semester;
+                $key = $yearLevelText . '|' . $semester . '|' . $academicYear;
                 if (!isset($groupedEnrollments[$key])) {
                     $groupedEnrollments[$key] = [
                         'year_level' => $yearLevelText,
                         'semester' => $semester,
                         'academic_year' => $academicYear,
                         'subjects' => [],
-                        'total_units' => 0
+                        'total_units' => 0,
+                        'is_current' => ($academicYear === '2025-2026' && $semester === '1st Semester')
                     ];
                 }
                 $groupedEnrollments[$key]['subjects'][] = $enrollment;
                 $groupedEnrollments[$key]['total_units'] += $enrollment['units'];
             }
             
-            // Sort by year level then semester (1st Year 1st Sem first)
+            // Sort by year level then semester (most recent first for dropdown)
             uksort($groupedEnrollments, function($a, $b) {
                 $orderA = str_replace(['1st Year', '2nd Year', '3rd Year', '4th Year', '5th Year'], ['1', '2', '3', '4', '5'], explode('|', $a)[0]);
                 $orderB = str_replace(['1st Year', '2nd Year', '3rd Year', '4th Year', '5th Year'], ['1', '2', '3', '4', '5'], explode('|', $b)[0]);
@@ -891,39 +747,66 @@ include __DIR__ . '/../templates/sidebar.php';
             ?>
             
             <?php if (count($allEnrollments) > 0): ?>
-            <div class="panel">
+            <?php 
+            // Prepare enrollment data - put current semester first
+            $enrollmentGroups = array_values($groupedEnrollments);
+            $enrollmentGroups = array_reverse($enrollmentGroups); // Most recent first
+            
+            // Find the current semester index (should be index 0 after reverse, but let's be sure)
+            $currentSemesterIndex = 0;
+            foreach ($enrollmentGroups as $idx => $grp) {
+                if ($grp['is_current']) {
+                    $currentSemesterIndex = $idx;
+                    break;
+                }
+            }
+            ?>
+            <div class="panel enrollment-history-panel">
                 <div class="panel-header">
-                    <h3><i class="fas fa-graduation-cap"></i> Complete Academic Record</h3>
+                    <h3><i class="fas fa-history"></i> Enrollment History</h3>
                     <div class="panel-header-actions">
-                        <span class="record-count"><?php echo count($allEnrollments); ?> subjects • <?php echo count($groupedEnrollments); ?> terms completed</span>
+                        <div class="semester-dropdown-wrapper">
+                            <label for="semesterSelector" class="dropdown-label">Select Semester</label>
+                            <select id="semesterSelector" class="semester-selector" onchange="showSelectedSemester()">
+                                <?php foreach ($enrollmentGroups as $index => $group): ?>
+                                <option value="<?php echo $index; ?>" <?php echo ($index === $currentSemesterIndex) ? 'selected' : ''; ?>>
+                                    <?php echo $group['year_level'] . ' • ' . $group['semester'] . ' • S.Y. ' . $group['academic_year']; ?>
+                                </option>
+                                <?php endforeach; ?>
+                                <option value="all">Show All Semesters</option>
+                            </select>
+                            <i class="fas fa-chevron-down dropdown-arrow"></i>
+                        </div>
                     </div>
                 </div>
-                <div class="panel-body academic-history-body">
-                    
-                    <?php $blockIndex = 0; foreach ($groupedEnrollments as $group): ?>
-                    <div class="semester-block collapsed" id="semester-block-<?php echo $blockIndex; ?>">
-                        <div class="semester-header" onclick="toggleSemester(<?php echo $blockIndex; ?>)">
-                            <div class="semester-title">
-                                <i class="fas fa-chevron-right toggle-icon"></i>
+                <div class="panel-body">
+                    <?php foreach ($enrollmentGroups as $index => $group): 
+                        // Calculate GWA for this semester
+                        $totalGradePoints = 0;
+                        $totalUnits = 0;
+                        foreach ($group['subjects'] as $s) {
+                            if ($s['grade'] !== null) {
+                                $totalGradePoints += $s['grade'] * $s['units'];
+                                $totalUnits += $s['units'];
+                            }
+                        }
+                        $gwa = $totalUnits > 0 ? $totalGradePoints / $totalUnits : 0;
+                        $isVisible = ($index === $currentSemesterIndex);
+                    ?>
+                    <div class="semester-content" id="semester-<?php echo $index; ?>" style="<?php echo !$isVisible ? 'display: none;' : ''; ?>">
+                        <!-- Semester Summary Bar -->
+                        <div class="semester-summary-bar">
+                            <div class="summary-item">
                                 <span class="year-level-badge"><?php echo $group['year_level']; ?></span>
                                 <span class="semester-name"><?php echo $group['semester']; ?></span>
                                 <span class="academic-year-tag">S.Y. <?php echo $group['academic_year']; ?></span>
+                                <?php if ($group['is_current']): ?>
+                                <span class="current-badge">Current</span>
+                                <?php endif; ?>
                             </div>
-                            <div class="semester-stats">
-                                <span class="subjects-count"><?php echo count($group['subjects']); ?> subjects</span>
-                                <span class="units-total"><?php echo $group['total_units']; ?> units</span>
-                                <?php 
-                                // Calculate GWA for this semester
-                                $totalGradePoints = 0;
-                                $totalUnits = 0;
-                                foreach ($group['subjects'] as $s) {
-                                    if ($s['grade'] !== null) {
-                                        $totalGradePoints += $s['grade'] * $s['units'];
-                                        $totalUnits += $s['units'];
-                                    }
-                                }
-                                $gwa = $totalUnits > 0 ? $totalGradePoints / $totalUnits : 0;
-                                ?>
+                            <div class="summary-stats">
+                                <span class="stat-item"><i class="fas fa-book"></i> <?php echo count($group['subjects']); ?> subjects</span>
+                                <span class="stat-item"><i class="fas fa-calculator"></i> <?php echo $group['total_units']; ?> units</span>
                                 <?php if ($gwa > 0): ?>
                                 <span class="gwa-badge <?php echo $gwa <= 1.75 ? 'gwa-excellent' : ($gwa <= 2.5 ? 'gwa-good' : 'gwa-fair'); ?>">
                                     GWA: <?php echo number_format($gwa, 2); ?>
@@ -932,10 +815,12 @@ include __DIR__ . '/../templates/sidebar.php';
                             </div>
                         </div>
                         
-                        <div class="semester-subjects">
-                            <table class="subjects-table">
+                        <!-- Subjects Table -->
+                        <div class="table-container">
+                            <table class="data-table grades-table">
                                 <thead>
                                     <tr>
+                                        <th style="width: 50px;">#</th>
                                         <th style="width: 110px;">Code</th>
                                         <th>Subject Name</th>
                                         <th style="width: 60px;" class="text-center">Units</th>
@@ -945,11 +830,12 @@ include __DIR__ . '/../templates/sidebar.php';
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <?php foreach ($group['subjects'] as $subject): ?>
+                                    <?php $num = 1; foreach ($group['subjects'] as $subject): ?>
                                     <tr>
+                                        <td class="text-center"><?php echo $num++; ?></td>
                                         <td><code class="subject-code-badge"><?php echo sanitize($subject['subject_code']); ?></code></td>
                                         <td><strong><?php echo sanitize($subject['subject_name']); ?></strong></td>
-                                        <td class="text-center"><span class="units-badge-small"><?php echo $subject['units']; ?></span></td>
+                                        <td class="text-center"><span class="units-badge"><?php echo $subject['units']; ?></span></td>
                                         <td class="text-center">
                                             <?php if ($subject['grade'] !== null): ?>
                                                 <span class="grade-pill <?php echo $subject['grade'] <= 3.0 ? 'grade-pass' : 'grade-fail'; ?>">
@@ -977,11 +863,17 @@ include __DIR__ . '/../templates/sidebar.php';
                                     </tr>
                                     <?php endforeach; ?>
                                 </tbody>
+                                <tfoot>
+                                    <tr class="table-summary-row">
+                                        <td colspan="3" class="text-right"><strong>Semester Total:</strong></td>
+                                        <td class="text-center"><strong class="total-units"><?php echo $group['total_units']; ?> units</strong></td>
+                                        <td colspan="3"></td>
+                                    </tr>
+                                </tfoot>
                             </table>
                         </div>
                     </div>
-                    <?php $blockIndex++; endforeach; ?>
-                    
+                    <?php endforeach; ?>
                 </div>
             </div>
             <?php endif; ?>
@@ -1039,7 +931,7 @@ include __DIR__ . '/../templates/sidebar.php';
                 </div>
             </div>
             
-            <!-- Payment History - Organized by Academic Year/Semester -->
+            <!-- Payment History - Dropdown Selector -->
             <?php 
             $allPayments = getStudentPayments($student['id']);
             
@@ -1047,13 +939,18 @@ include __DIR__ . '/../templates/sidebar.php';
             $groupedPayments = [];
             foreach ($allPayments as $payment) {
                 $key = $payment['academic_year'] . '|' . $payment['semester'];
+                
+                // Determine if this is the current semester
+                $isCurrent = ($payment['academic_year'] === '2025-2026' && $payment['semester'] === '1st Semester');
+                
                 if (!isset($groupedPayments[$key])) {
                     $groupedPayments[$key] = [
                         'academic_year' => $payment['academic_year'],
                         'semester' => $payment['semester'],
                         'payments' => [],
                         'total_due' => 0,
-                        'total_paid' => 0
+                        'total_paid' => 0,
+                        'is_current' => $isCurrent
                     ];
                 }
                 $groupedPayments[$key]['payments'][] = $payment;
@@ -1069,38 +966,61 @@ include __DIR__ . '/../templates/sidebar.php';
                 $semB = str_contains($b, '1st Semester') ? 1 : (str_contains($b, '2nd Semester') ? 2 : 3);
                 
                 if ($yearA === $yearB) {
-                    return $semB - $semA; // 2nd sem before 1st sem (newest first)
+                    return $semB - $semA;
                 }
-                return strcmp($yearB, $yearA); // Newest year first
+                return strcmp($yearB, $yearA);
             });
+            
+            // Convert to indexed array and find current semester
+            $paymentGroups = array_values($groupedPayments);
+            $currentPaymentIndex = 0;
+            foreach ($paymentGroups as $idx => $grp) {
+                if ($grp['is_current']) {
+                    $currentPaymentIndex = $idx;
+                    break;
+                }
+            }
             ?>
             
             <?php if (count($allPayments) > 0): ?>
-            <div class="panel">
+            <div class="panel enrollment-history-panel payment-history-panel">
                 <div class="panel-header">
                     <h3><i class="fas fa-history"></i> Payment History</h3>
                     <div class="panel-header-actions">
-                        <span class="record-count"><?php echo count($allPayments); ?> transactions • <?php echo count($groupedPayments); ?> terms</span>
+                        <div class="semester-dropdown-wrapper">
+                            <label for="paymentSemesterSelector" class="dropdown-label">Select Term</label>
+                            <select id="paymentSemesterSelector" class="semester-selector" onchange="showSelectedPaymentSemester()">
+                                <?php foreach ($paymentGroups as $index => $group): ?>
+                                <option value="<?php echo $index; ?>" <?php echo ($index === $currentPaymentIndex) ? 'selected' : ''; ?>>
+                                    <?php echo $group['semester'] . ' • S.Y. ' . $group['academic_year']; ?>
+                                </option>
+                                <?php endforeach; ?>
+                                <option value="all">Show All Terms</option>
+                            </select>
+                            <i class="fas fa-chevron-down dropdown-arrow"></i>
+                        </div>
                     </div>
                 </div>
-                <div class="panel-body academic-history-body">
-                    
-                    <?php $paymentBlockIndex = 0; foreach ($groupedPayments as $group): ?>
-                    <?php 
-                    $balance = $group['total_due'] - $group['total_paid'];
-                    $isPaid = $balance <= 0;
+                <div class="panel-body">
+                    <?php foreach ($paymentGroups as $index => $group): 
+                        $balance = $group['total_due'] - $group['total_paid'];
+                        $isPaid = $balance <= 0;
+                        $isVisible = ($index === $currentPaymentIndex);
                     ?>
-                    <div class="semester-block payment-block collapsed" id="payment-block-<?php echo $paymentBlockIndex; ?>">
-                        <div class="semester-header payment-header" onclick="togglePaymentBlock(<?php echo $paymentBlockIndex; ?>)">
-                            <div class="semester-title">
-                                <i class="fas fa-chevron-right toggle-icon"></i>
-                                <span class="year-level-badge"><?php echo $group['academic_year']; ?></span>
+                    <div class="payment-content" id="payment-semester-<?php echo $index; ?>" style="<?php echo !$isVisible ? 'display: none;' : ''; ?>">
+                        <!-- Payment Summary Bar -->
+                        <div class="semester-summary-bar payment-summary-bar">
+                            <div class="summary-item">
                                 <span class="semester-name"><?php echo $group['semester']; ?></span>
+                                <span class="academic-year-tag">S.Y. <?php echo $group['academic_year']; ?></span>
+                                <?php if ($group['is_current']): ?>
+                                <span class="current-badge">Current</span>
+                                <?php endif; ?>
                             </div>
-                            <div class="semester-stats">
-                                <span class="subjects-count"><?php echo count($group['payments']); ?> fees</span>
-                                <span class="payment-amount-badge"><?php echo formatCurrency($group['total_due']); ?></span>
-                                <span class="payment-status-badge <?php echo $isPaid ? 'status-paid' : 'status-balance'; ?>">
+                            <div class="summary-stats">
+                                <span class="stat-item"><i class="fas fa-receipt"></i> <?php echo count($group['payments']); ?> fees</span>
+                                <span class="stat-item"><i class="fas fa-peso-sign"></i> <?php echo formatCurrency($group['total_due']); ?></span>
+                                <span class="payment-status-indicator <?php echo $isPaid ? 'status-fully-paid' : 'status-has-balance'; ?>">
                                     <?php if ($isPaid): ?>
                                         <i class="fas fa-check-circle"></i> Fully Paid
                                     <?php else: ?>
@@ -1110,26 +1030,29 @@ include __DIR__ . '/../templates/sidebar.php';
                             </div>
                         </div>
                         
-                        <div class="semester-subjects payment-details">
-                            <table class="subjects-table payment-table">
+                        <!-- Payments Table -->
+                        <div class="table-container">
+                            <table class="data-table grades-table payment-table">
                                 <thead>
                                     <tr>
+                                        <th style="width: 50px;">#</th>
                                         <th>Fee Type</th>
                                         <th>Description</th>
-                                        <th class="text-right" style="width: 100px;">Amount</th>
-                                        <th class="text-right" style="width: 100px;">Paid</th>
+                                        <th class="text-right" style="width: 110px;">Amount Due</th>
+                                        <th class="text-right" style="width: 110px;">Amount Paid</th>
                                         <th style="width: 100px;">Date</th>
                                         <th style="width: 90px;">Method</th>
                                         <th style="width: 80px;" class="text-center">Status</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <?php foreach ($group['payments'] as $payment): ?>
+                                    <?php $num = 1; foreach ($group['payments'] as $payment): ?>
                                     <tr>
+                                        <td class="text-center"><?php echo $num++; ?></td>
                                         <td><strong><?php echo sanitize($payment['payment_type_name'] ?? 'Other'); ?></strong></td>
                                         <td><span class="payment-desc"><?php echo sanitize($payment['description'] ?? '—'); ?></span></td>
                                         <td class="text-right"><?php echo formatCurrency($payment['amount_due']); ?></td>
-                                        <td class="text-right text-success"><?php echo formatCurrency($payment['amount_paid']); ?></td>
+                                        <td class="text-right text-success"><strong><?php echo formatCurrency($payment['amount_paid']); ?></strong></td>
                                         <td>
                                             <?php if ($payment['payment_date']): ?>
                                                 <span class="payment-date"><?php echo date('M d, Y', strtotime($payment['payment_date'])); ?></span>
@@ -1162,8 +1085,8 @@ include __DIR__ . '/../templates/sidebar.php';
                                     <?php endforeach; ?>
                                 </tbody>
                                 <tfoot>
-                                    <tr class="payment-summary-row">
-                                        <td colspan="2" class="text-right"><strong>Semester Total:</strong></td>
+                                    <tr class="table-summary-row">
+                                        <td colspan="3" class="text-right"><strong>Term Total:</strong></td>
                                         <td class="text-right"><strong><?php echo formatCurrency($group['total_due']); ?></strong></td>
                                         <td class="text-right text-success"><strong><?php echo formatCurrency($group['total_paid']); ?></strong></td>
                                         <td colspan="3"></td>
@@ -1172,8 +1095,7 @@ include __DIR__ . '/../templates/sidebar.php';
                             </table>
                         </div>
                     </div>
-                    <?php $paymentBlockIndex++; endforeach; ?>
-                    
+                    <?php endforeach; ?>
                 </div>
             </div>
             <?php else: ?>

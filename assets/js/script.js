@@ -169,35 +169,6 @@ function validateStudentForm(form) {
     return isValid;
 }
 
-/**
- * Validate the program form
- * @param {HTMLFormElement} form - The form element
- * @returns {boolean} - Is the form valid?
- */
-function validateProgramForm(form) {
-    let isValid = true;
-    
-    // Check program code
-    const programCode = form.querySelector('[name="program_code"]');
-    if (programCode && !programCode.value.trim()) {
-        showError(programCode, 'Program code is required');
-        isValid = false;
-    } else if (programCode) {
-        clearError(programCode);
-    }
-    
-    // Check program name
-    const programName = form.querySelector('[name="program_name"]');
-    if (programName && !programName.value.trim()) {
-        showError(programName, 'Program name is required');
-        isValid = false;
-    } else if (programName) {
-        clearError(programName);
-    }
-    
-    return isValid;
-}
-
 // ============================================
 // DELETE CONFIRMATION
 // Desktop-style confirmation dialog
@@ -319,43 +290,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
-    
-    // Add form validation to program forms
-    const programForms = document.querySelectorAll('form[data-validate="program"]');
-    programForms.forEach(function(form) {
-        form.addEventListener('submit', function(e) {
-            if (!validateProgramForm(form)) {
-                e.preventDefault();
-            }
-        });
-    });
 });
-
-// ============================================
-// UTILITY FUNCTIONS
-// Handy helpers
-// ============================================
-
-/**
- * Format a date nicely
- * @param {string} dateString - Date in YYYY-MM-DD format
- * @returns {string} - Formatted date
- */
-function formatDate(dateString) {
-    if (!dateString) return 'N/A';
-    
-    const options = { year: 'numeric', month: 'short', day: 'numeric' };
-    return new Date(dateString).toLocaleDateString('en-US', options);
-}
-
-/**
- * Capitalize the first letter of a string
- * @param {string} str - The string to capitalize
- * @returns {string} - Capitalized string
- */
-function capitalize(str) {
-    return str.charAt(0).toUpperCase() + str.slice(1);
-}
 
 // ============================================
 // COLLAPSIBLE SEMESTER BLOCKS
@@ -363,50 +298,63 @@ function capitalize(str) {
 // ============================================
 
 /**
- * Toggle a semester block's expanded/collapsed state
- * @param {number} index - The index of the semester block
+ * Show selected semester from dropdown
+ * Hides all semester content and shows only the selected one
+ * If 'all' is selected, shows all semesters
  */
-function toggleSemester(index) {
-    const block = document.getElementById('semester-block-' + index);
-    if (block) {
-        block.classList.toggle('collapsed');
-        block.classList.toggle('expanded');
+function showSelectedSemester() {
+    const selector = document.getElementById('semesterSelector');
+    if (!selector) return;
+    
+    const selectedValue = selector.value;
+    const allSemesters = document.querySelectorAll('.semester-content');
+    
+    if (selectedValue === 'all') {
+        // Show all semesters
+        allSemesters.forEach(function(sem) {
+            sem.style.display = 'block';
+        });
+    } else {
+        // Hide all semester contents
+        allSemesters.forEach(function(sem) {
+            sem.style.display = 'none';
+        });
+        
+        // Show the selected semester
+        const selectedSemester = document.getElementById('semester-' + selectedValue);
+        if (selectedSemester) {
+            selectedSemester.style.display = 'block';
+        }
     }
 }
 
 /**
- * Toggle a payment block's expanded/collapsed state
- * @param {number} index - The index of the payment block
+ * Show selected payment semester from dropdown
+ * Hides all payment content and shows only the selected one
+ * If 'all' is selected, shows all payment terms
  */
-function togglePaymentBlock(index) {
-    const block = document.getElementById('payment-block-' + index);
-    if (block) {
-        block.classList.toggle('collapsed');
-        block.classList.toggle('expanded');
+function showSelectedPaymentSemester() {
+    const selector = document.getElementById('paymentSemesterSelector');
+    if (!selector) return;
+    
+    const selectedValue = selector.value;
+    const allPayments = document.querySelectorAll('.payment-content');
+    
+    if (selectedValue === 'all') {
+        // Show all payment terms
+        allPayments.forEach(function(payment) {
+            payment.style.display = 'block';
+        });
+    } else {
+        // Hide all payment contents
+        allPayments.forEach(function(payment) {
+            payment.style.display = 'none';
+        });
+        
+        // Show the selected payment term
+        const selectedPayment = document.getElementById('payment-semester-' + selectedValue);
+        if (selectedPayment) {
+            selectedPayment.style.display = 'block';
+        }
     }
 }
-
-/**
- * Expand all semester blocks
- */
-function expandAllSemesters() {
-    document.querySelectorAll('.semester-block').forEach(block => {
-        block.classList.remove('collapsed');
-        block.classList.add('expanded');
-    });
-}
-
-/**
- * Collapse all semester blocks
- */
-function collapseAllSemesters() {
-    document.querySelectorAll('.semester-block').forEach(block => {
-        block.classList.add('collapsed');
-        block.classList.remove('expanded');
-    });
-}
-
-// ============================================
-// That's it! Pretty simple, right? 
-// Feel free to add more features as you learn!
-// ============================================

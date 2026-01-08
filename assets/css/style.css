@@ -1969,432 +1969,6 @@ th.sortable a:hover {
 }
 
 /* ============================================
-   PROGRAM MANAGEMENT STYLES
-   ============================================ */
-
-/* Programs Grid - Card Layout */
-.programs-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 1.25rem;
-    padding: 0.25rem;
-}
-
-/* Program Card */
-.program-card {
-    background: var(--card-bg);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-lg);
-    padding: 1.25rem;
-    transition: var(--transition);
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-}
-
-.program-card:hover {
-    box-shadow: var(--shadow-md);
-    border-color: var(--primary-color);
-}
-
-.program-card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 0.75rem;
-}
-
-.program-code-badge {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
-    color: white;
-    font-size: 0.875rem;
-    font-weight: 600;
-    padding: 0.35rem 0.75rem;
-    border-radius: 20px;
-    letter-spacing: 0.5px;
-}
-
-.program-actions-mini {
-    display: flex;
-    gap: 0.25rem;
-    opacity: 0;
-    transition: var(--transition);
-}
-
-.program-card:hover .program-actions-mini {
-    opacity: 1;
-}
-
-.btn-icon {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 32px;
-    height: 32px;
-    border-radius: var(--radius);
-    background: transparent;
-    color: var(--text-secondary);
-    border: none;
-    cursor: pointer;
-    transition: var(--transition);
-}
-
-.btn-icon:hover {
-    background: var(--primary-light);
-    color: var(--primary-color);
-}
-
-.program-name {
-    font-size: 1rem;
-    font-weight: 600;
-    color: var(--text-primary);
-    margin-bottom: 0.25rem;
-    line-height: 1.3;
-}
-
-.program-department {
-    font-size: 0.8rem;
-    color: var(--text-muted);
-    margin-bottom: 1rem;
-}
-
-.program-stats {
-    display: flex;
-    gap: 1.5rem;
-    padding: 0.75rem 0;
-    border-top: 1px solid var(--border-color);
-    border-bottom: 1px solid var(--border-color);
-    margin-bottom: 1rem;
-}
-
-.program-stat {
-    display: flex;
-    flex-direction: column;
-}
-
-.program-stat .stat-number {
-    font-size: 1.25rem;
-    font-weight: 700;
-    color: var(--text-primary);
-}
-
-.program-stat .stat-text {
-    font-size: 0.75rem;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-/* Year Level Progress Bars */
-.year-bar-item {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.year-label {
-    font-size: 0.7rem;
-    color: var(--text-muted);
-    width: 30px;
-    flex-shrink: 0;
-}
-
-.year-bar {
-    flex: 1;
-    height: 6px;
-    background: var(--border-color);
-    border-radius: 3px;
-    overflow: hidden;
-}
-
-.year-bar-fill {
-    height: 100%;
-    background: linear-gradient(90deg, var(--primary-color), var(--chart-cyan));
-    border-radius: 3px;
-    transition: width 0.3s ease;
-}
-
-.year-count {
-    font-size: 0.7rem;
-    color: var(--text-secondary);
-    width: 20px;
-    text-align: right;
-    flex-shrink: 0;
-}
-
-.program-card-footer {
-    margin-top: auto;
-    padding-top: 1rem;
-    border-top: 1px solid var(--border-color);
-    display: flex;
-    justify-content: center;
-}
-
-.program-card-footer .btn {
-    flex: 1;
-}
-
-/* Year level bars wrapper - ensures consistent spacing */
-.year-level-bars {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    margin-bottom: 1rem;
-    flex-grow: 1;
-}
-
-/* Program View Page */
-.program-view-header {
-    display: flex;
-    align-items: flex-start;
-    gap: 1.5rem;
-    margin-bottom: 2rem;
-}
-
-.program-icon-large {
-    width: 80px;
-    height: 80px;
-    background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
-    border-radius: var(--radius-lg);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-size: 2rem;
-    flex-shrink: 0;
-}
-
-.program-view-info h1 {
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: var(--text-primary);
-    margin-bottom: 0.25rem;
-}
-
-.program-view-info .program-code {
-    font-size: 0.875rem;
-    color: var(--primary-color);
-    font-weight: 600;
-    margin-bottom: 0.5rem;
-}
-
-.program-view-info .program-description {
-    color: var(--text-secondary);
-    font-size: 0.9rem;
-}
-
-/* Students by Year Level */
-.year-level-tabs {
-    display: flex;
-    gap: 0.5rem;
-    border-bottom: 2px solid var(--border-color);
-    margin-bottom: 1.5rem;
-}
-
-.year-tab {
-    padding: 0.75rem 1.25rem;
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: var(--text-secondary);
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    position: relative;
-    transition: var(--transition);
-}
-
-.year-tab:hover {
-    color: var(--primary-color);
-}
-
-.year-tab.active {
-    color: var(--primary-color);
-}
-
-.year-tab.active::after {
-    content: '';
-    position: absolute;
-    bottom: -2px;
-    left: 0;
-    right: 0;
-    height: 2px;
-    background: var(--primary-color);
-}
-
-.year-tab-badge {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 20px;
-    height: 20px;
-    background: var(--border-color);
-    color: var(--text-secondary);
-    font-size: 0.7rem;
-    font-weight: 600;
-    border-radius: 10px;
-    padding: 0 6px;
-    margin-left: 6px;
-}
-
-.year-tab.active .year-tab-badge {
-    background: var(--primary-color);
-    color: white;
-}
-
-/* Students in Program Table */
-.student-program-table {
-    width: 100%;
-}
-
-.student-program-row {
-    display: grid;
-    grid-template-columns: 1fr 120px 100px 100px;
-    gap: 1rem;
-    padding: 0.875rem 1rem;
-    border-bottom: 1px solid var(--border-color);
-    align-items: center;
-}
-
-.student-program-row:hover {
-    background: var(--primary-light);
-}
-
-.student-program-info {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-}
-
-.student-avatar-sm {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    background: var(--primary-light);
-    color: var(--primary-color);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.875rem;
-    font-weight: 600;
-    flex-shrink: 0;
-}
-
-.student-name-id h4 {
-    font-size: 0.9rem;
-    font-weight: 600;
-    color: var(--text-primary);
-    margin-bottom: 0.125rem;
-}
-
-.student-name-id span {
-    font-size: 0.75rem;
-    color: var(--text-muted);
-}
-
-/* Assign Student Modal Form */
-.assign-form-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 1rem;
-}
-
-.assign-form-grid .form-group:first-child {
-    grid-column: 1 / -1;
-}
-
-/* Bulk Update Form */
-.bulk-update-row {
-    display: grid;
-    grid-template-columns: 1fr 150px 150px;
-    gap: 1rem;
-    padding: 0.5rem 0;
-    border-bottom: 1px solid var(--border-color);
-    align-items: center;
-}
-
-.bulk-update-row:last-child {
-    border-bottom: none;
-}
-
-.bulk-student-info {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.bulk-select {
-    padding: 0.375rem 0.5rem;
-    font-size: 0.8rem;
-    border: 1px solid var(--input-border);
-    border-radius: var(--radius-sm);
-    background: white;
-}
-
-/* Program Form Styles */
-.program-form .form-row-2 {
-    display: grid;
-    grid-template-columns: 1fr 2fr;
-    gap: 1rem;
-}
-
-.program-form .form-row-2-equal {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1rem;
-}
-
-/* Empty Program State */
-.no-students-message {
-    text-align: center;
-    padding: 3rem 1rem;
-    color: var(--text-muted);
-}
-
-.no-students-message i {
-    font-size: 3rem;
-    margin-bottom: 1rem;
-    opacity: 0.5;
-}
-
-.no-students-message h4 {
-    font-size: 1rem;
-    color: var(--text-secondary);
-    margin-bottom: 0.5rem;
-}
-
-/* Quick Stats in Program View */
-.program-quick-stats {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 1rem;
-    margin-bottom: 1.5rem;
-}
-
-.quick-stat-card {
-    background: var(--input-bg);
-    border-radius: var(--radius);
-    padding: 1rem;
-    text-align: center;
-}
-
-.quick-stat-card .stat-value {
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: var(--text-primary);
-}
-
-.quick-stat-card .stat-label {
-    font-size: 0.75rem;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-/* ============================================
    ENROLLMENT & PAYMENT SECTIONS
    ============================================ */
 
@@ -2734,6 +2308,15 @@ th.sortable a:hover {
     color: var(--primary-color);
 }
 
+.section-description {
+    font-size: 0.8125rem;
+    color: var(--text-muted);
+    margin-top: -0.5rem;
+    margin-bottom: 1.25rem;
+    line-height: 1.5;
+    max-width: 700px;
+}
+
 .enrollment-summary-cards {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -2945,54 +2528,198 @@ th.sortable a:hover {
 }
 
 /* ============================================
-   ACADEMIC HISTORY - SEMESTER BLOCKS
+   ENROLLMENT HISTORY - DROPDOWN SELECTOR
    ============================================ */
 
-.academic-history-body {
-    padding: 0 !important;
+.enrollment-history-panel .panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
 }
 
-.semester-block {
-    border-bottom: 1px solid var(--border-color);
+.semester-dropdown-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
 }
 
-.semester-block:last-child {
-    border-bottom: none;
+.dropdown-label {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    white-space: nowrap;
 }
 
-.semester-header {
+.semester-selector {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background: linear-gradient(to bottom, var(--card-bg), var(--input-bg));
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 0.5rem 2.25rem 0.5rem 0.875rem;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    cursor: pointer;
+    min-width: 280px;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.semester-selector:hover {
+    border-color: var(--primary-color);
+    background: var(--card-bg);
+}
+
+.semester-selector:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(0, 120, 212, 0.15);
+}
+
+.semester-dropdown-wrapper .dropdown-arrow {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    pointer-events: none;
+    font-size: 0.65rem;
+    transition: color 0.2s ease;
+}
+
+.semester-dropdown-wrapper:hover .dropdown-arrow {
+    color: var(--primary-color);
+}
+
+/* Semester Summary Bar */
+.semester-summary-bar {
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 1rem 1.25rem;
     background: linear-gradient(to right, var(--primary-light), transparent);
     border-left: 4px solid var(--primary-color);
-    cursor: pointer;
-    transition: all 0.2s ease;
-    user-select: none;
+    border-radius: 8px 8px 0 0;
+    margin-bottom: 0;
+    flex-wrap: wrap;
+    gap: 1rem;
 }
 
-.semester-header:hover {
-    background: linear-gradient(to right, rgba(0, 120, 212, 0.12), transparent);
+.semester-summary-bar .summary-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
 }
 
+.semester-summary-bar .summary-stats {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.semester-summary-bar .stat-item {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.semester-summary-bar .stat-item i {
+    color: var(--primary-color);
+}
+
+.current-badge {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 0.25rem 0.6rem;
+    border-radius: 20px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Semester/Payment Content Animation */
+.semester-content,
+.payment-content {
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Payment History Panel Styles */
+.payment-history-panel .panel-body {
+    padding: 0;
+}
+
+.payment-content {
+    border-bottom: 1px solid var(--border-color);
+}
+
+.payment-content:last-child {
+    border-bottom: none;
+}
+
+.payment-summary-bar {
+    background: linear-gradient(to right, rgba(16, 185, 129, 0.08), transparent);
+    border-left: 4px solid #10b981;
+}
+
+.payment-status-indicator {
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.3rem 0.75rem;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.payment-status-indicator.status-fully-paid {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.payment-status-indicator.status-has-balance {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.payment-method-badge {
+    font-size: 0.7rem;
+    font-weight: 500;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    background: var(--input-bg);
+    color: var(--text-secondary);
+}
+
+.payment-desc {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+/* Keep legacy styles for backward compatibility */
 .semester-title {
     display: flex;
     align-items: center;
     gap: 0.75rem;
-}
-
-/* Toggle Icon */
-.toggle-icon {
-    font-size: 0.75rem;
-    color: var(--text-muted);
-    transition: transform 0.3s ease;
-    width: 16px;
-}
-
-.semester-block.expanded .toggle-icon {
-    transform: rotate(90deg);
-    color: var(--primary-color);
 }
 
 .year-level-badge {
@@ -3422,7 +3149,7 @@ th.sortable a:hover {
     color: var(--text-muted);
 }
 
-/* Responsive Program Grid */
+/* Responsive Styles */
 @media (max-width: 1024px) {
     .enrollment-summary-cards {
         grid-template-columns: repeat(2, 1fr);
@@ -3441,28 +3168,6 @@ th.sortable a:hover {
 }
 
 @media (max-width: 768px) {
-    .programs-grid {
-        grid-template-columns: 1fr;
-    }
-    
-    .program-quick-stats {
-        grid-template-columns: repeat(2, 1fr);
-    }
-    
-    .student-program-row {
-        grid-template-columns: 1fr;
-        gap: 0.5rem;
-    }
-    
-    .program-form .form-row-2,
-    .program-form .form-row-2-equal {
-        grid-template-columns: 1fr;
-    }
-    
-    .enrollment-stats {
-        flex-wrap: wrap;
-        justify-content: center;
-    }
     
     .payment-summary {
         grid-template-columns: 1fr;

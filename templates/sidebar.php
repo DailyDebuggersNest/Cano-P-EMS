@@ -34,14 +34,6 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                     <span class="tooltip">Students</span>
                 </a>
             </li>
-            <li>
-                <a href="<?php echo $basePath ?? ''; ?>pages/programs.php" 
-                   class="nav-item <?php echo $currentPage === 'programs.php' ? 'active' : ''; ?>">
-                    <i class="fas fa-graduation-cap"></i>
-                    <span class="nav-text">Programs</span>
-                    <span class="tooltip">Programs</span>
-                </a>
-            </li>
         </ul>
     </nav>
 </aside>
