@@ -519,9 +519,6 @@ include __DIR__ . '/../templates/sidebar.php';
            class="profile-tab <?php echo $activeTab === 'schedule' ? 'active' : ''; ?>">
             <i class="fas fa-calendar-alt"></i>
             <span>Schedule</span>
-            <?php if ($scheduleStats['total_classes'] > 0): ?>
-                <span class="tab-badge"><?php echo $scheduleStats['total_classes']; ?></span>
-            <?php endif; ?>
         </a>
         <a href="students.php?action=view&id=<?php echo $student['id']; ?>&tab=subjects" 
            class="profile-tab <?php echo $activeTab === 'subjects' ? 'active' : ''; ?>">
@@ -909,69 +906,75 @@ include __DIR__ . '/../templates/sidebar.php';
             <div id="list-view" class="schedule-view-content" style="display: none;">
                 <div class="panel">
                     <div class="panel-header">
-                        <h3><i class="fas fa-list-alt"></i> Class Schedule (List)</h3>
+                        <h3><i class="fas fa-list-alt"></i> Class Schedule</h3>
                     </div>
-                    <div class="panel-body schedule-list-body">
-                        <?php foreach ($weekdays as $day): ?>
-                            <?php if (!empty($schedulesByDay[$day])): ?>
-                            <div class="day-schedule-block <?php echo date('l') === $day ? 'today' : ''; ?>">
-                                <div class="day-header-block">
-                                    <h4>
-                                        <i class="fas fa-calendar-day"></i>
-                                        <?php echo $day; ?>
-                                        <?php if (date('l') === $day): ?>
-                                            <span class="today-badge">Today</span>
-                                        <?php endif; ?>
-                                    </h4>
-                                    <span class="class-count"><?php echo count($schedulesByDay[$day]); ?> class<?php echo count($schedulesByDay[$day]) > 1 ? 'es' : ''; ?></span>
-                                </div>
-                                <div class="day-classes">
-                                    <?php foreach ($schedulesByDay[$day] as $class): 
-                                        $colorClass = getClassTypeColor($class['class_type']);
+                    <div class="panel-body">
+                        <div class="table-container">
+                            <table class="data-table schedule-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 50px;">#</th>
+                                        <th style="width: 100px;">Day</th>
+                                        <th style="width: 140px;">Time</th>
+                                        <th style="width: 100px;">Code</th>
+                                        <th>Subject Name</th>
+                                        <th style="width: 90px;" class="text-center">Type</th>
+                                        <th style="width: 120px;">Room</th>
+                                        <th>Instructor</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php 
+                                    $num = 1;
+                                    foreach ($weekdays as $day):
+                                        if (!empty($schedulesByDay[$day])):
+                                            foreach ($schedulesByDay[$day] as $class):
                                     ?>
-                                    <div class="class-card <?php echo $colorClass; ?>">
-                                        <div class="class-time-block">
-                                            <span class="start-time"><?php echo formatScheduleTime($class['start_time']); ?></span>
-                                            <span class="time-separator">–</span>
-                                            <span class="end-time"><?php echo formatScheduleTime($class['end_time']); ?></span>
-                                        </div>
-                                        <div class="class-info-block">
-                                            <div class="class-main-info">
-                                                <code class="subject-code-badge"><?php echo sanitize($class['subject_code']); ?></code>
-                                                <span class="subject-name"><?php echo sanitize($class['subject_name']); ?></span>
-                                            </div>
-                                            <div class="class-meta-info">
-                                                <span class="meta-item">
-                                                    <i class="<?php echo getClassTypeIcon($class['class_type']); ?>"></i>
-                                                    <?php echo sanitize($class['class_type']); ?>
-                                                </span>
-                                                <span class="meta-item">
-                                                    <i class="fas fa-door-open"></i>
-                                                    <?php echo sanitize($class['room'] ?? 'TBA'); ?>
-                                                </span>
-                                                <?php if (!empty($class['building'])): ?>
-                                                <span class="meta-item">
-                                                    <i class="fas fa-building"></i>
-                                                    <?php echo sanitize($class['building']); ?>
-                                                </span>
-                                                <?php endif; ?>
-                                                <?php if (!empty($class['instructor_last_name'])): ?>
-                                                <span class="meta-item">
-                                                    <i class="fas fa-user-tie"></i>
-                                                    <?php echo sanitize(trim($class['instructor_title'] . ' ' . $class['instructor_first_name'] . ' ' . $class['instructor_last_name'])); ?>
-                                                </span>
-                                                <?php endif; ?>
-                                            </div>
-                                        </div>
-                                        <div class="class-units">
-                                            <span class="units-badge"><?php echo $class['units']; ?> units</span>
-                                        </div>
-                                    </div>
-                                    <?php endforeach; ?>
-                                </div>
-                            </div>
-                            <?php endif; ?>
-                        <?php endforeach; ?>
+                                    <tr>
+                                        <td class="text-center"><?php echo $num++; ?></td>
+                                        <td>
+                                            <span class="day-badge <?php echo date('l') === $day ? 'today' : ''; ?>">
+                                                <?php echo $day; ?>
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="time-range">
+                                                <?php echo formatScheduleTime($class['start_time']); ?> - <?php echo formatScheduleTime($class['end_time']); ?>
+                                            </span>
+                                        </td>
+                                        <td><code class="subject-code-badge"><?php echo sanitize($class['subject_code']); ?></code></td>
+                                        <td><strong><?php echo sanitize($class['subject_name']); ?></strong></td>
+                                        <td class="text-center">
+                                            <?php 
+                                            $typeClass = strtolower($class['class_type']) === 'lecture' ? 'primary' : 
+                                                        (strtolower($class['class_type']) === 'laboratory' ? 'warning' : 'info');
+                                            ?>
+                                            <span class="badge badge-<?php echo $typeClass; ?>">
+                                                <?php echo sanitize($class['class_type']); ?>
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <?php echo sanitize($class['room'] ?? 'TBA'); ?>
+                                            <?php if (!empty($class['building'])): ?>
+                                                <br><small class="text-muted"><?php echo sanitize($class['building']); ?></small>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td>
+                                            <?php if (!empty($class['instructor_last_name'])): ?>
+                                                <?php echo sanitize(trim($class['instructor_title'] . ' ' . $class['instructor_first_name'] . ' ' . $class['instructor_last_name'])); ?>
+                                            <?php else: ?>
+                                                <span class="text-muted">TBA</span>
+                                            <?php endif; ?>
+                                        </td>
+                                    </tr>
+                                    <?php 
+                                            endforeach;
+                                        endif;
+                                    endforeach; 
+                                    ?>
+                                </tbody>
+                            </table>
+                        </div>
                         
                         <?php 
                         // Check if there are no classes at all
