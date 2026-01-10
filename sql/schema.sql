@@ -612,6 +612,51 @@ LEFT JOIN instructors i ON COALESCE(cs.instructor_id, e.instructor_id) = i.id
 WHERE cs.is_active = TRUE
 ORDER BY s.last_name, cs.day_of_week, cs.start_time;
 
+-- View: Departments with program count
+CREATE OR REPLACE VIEW vw_departments AS
+SELECT 
+    d.id,
+    d.department_code,
+    d.department_name,
+    d.college,
+    d.dean_name,
+    COUNT(p.id) AS program_count
+FROM departments d
+LEFT JOIN programs p ON d.id = p.department_id
+WHERE d.is_active = TRUE
+GROUP BY d.id;
+
+-- View: Active payment types
+CREATE OR REPLACE VIEW vw_payment_types AS
+SELECT 
+    id,
+    type_code,
+    type_name,
+    description,
+    category,
+    default_amount,
+    is_mandatory
+FROM payment_types
+WHERE is_active = TRUE;
+
+-- View: Student program history
+CREATE OR REPLACE VIEW vw_student_program_history AS
+SELECT 
+    sp.id,
+    s.student_id AS student_number,
+    CONCAT(s.last_name, ', ', s.first_name) AS student_name,
+    p.program_code,
+    p.program_name,
+    ay.academic_year,
+    ay.semester,
+    sp.action,
+    sp.effective_date,
+    sp.remarks
+FROM student_programs sp
+JOIN students s ON sp.student_id = s.id
+JOIN programs p ON sp.program_id = p.id
+JOIN academic_years ay ON sp.academic_year_id = ay.id;
+
 -- ============================================================
 -- TRIGGERS: Automatic data management
 -- ============================================================
@@ -795,5 +840,301 @@ END//
 DELIMITER ;
 
 -- ============================================================
--- End of Schema v2.0.0
+-- ADDITIONAL VIEWS: Enhanced reporting
+-- ============================================================
+
+-- View: Instructor workload (classes per instructor)
+CREATE OR REPLACE VIEW vw_instructor_workload AS
+SELECT 
+    i.id AS instructor_id,
+    i.employee_id,
+    CONCAT(IFNULL(i.title, ''), ' ', i.first_name, ' ', i.last_name) AS instructor_name,
+    d.department_name,
+    i.position,
+    COUNT(DISTINCT e.id) AS total_classes,
+    COUNT(DISTINCT e.student_id) AS total_students,
+    SUM(c.units) AS total_units_handled
+FROM instructors i
+LEFT JOIN departments d ON i.department_id = d.id
+LEFT JOIN enrollments e ON i.id = e.instructor_id AND e.enrollment_status = 'Enrolled'
+LEFT JOIN curriculum c ON e.curriculum_id = c.id
+WHERE i.is_active = TRUE
+GROUP BY i.id
+ORDER BY total_classes DESC;
+
+-- View: Enrollment grades (quick grade lookup)
+CREATE OR REPLACE VIEW vw_enrollment_grades AS
+SELECT 
+    e.id AS enrollment_id,
+    s.student_id AS student_number,
+    CONCAT(s.last_name, ', ', s.first_name) AS student_name,
+    p.program_code,
+    c.course_code,
+    c.course_name,
+    c.units,
+    ay.academic_year,
+    ay.semester,
+    e.midterm_grade,
+    e.final_grade,
+    e.grade,
+    e.grade_status,
+    CONCAT(IFNULL(i.title, ''), ' ', i.first_name, ' ', i.last_name) AS instructor_name
+FROM enrollments e
+JOIN students s ON e.student_id = s.id
+JOIN curriculum c ON e.curriculum_id = c.id
+JOIN academic_years ay ON e.academic_year_id = ay.id
+LEFT JOIN programs p ON s.current_program_id = p.id
+LEFT JOIN instructors i ON e.instructor_id = i.id
+ORDER BY ay.academic_year DESC, s.last_name, c.course_code;
+
+-- View: Student full profile (all info + program + balance)
+CREATE OR REPLACE VIEW vw_student_full_profile AS
+SELECT 
+    s.id,
+    s.student_id AS student_number,
+    CONCAT(s.last_name, ', ', s.first_name, ' ', IFNULL(s.middle_name, '')) AS full_name,
+    s.first_name,
+    s.middle_name,
+    s.last_name,
+    s.sex,
+    s.email,
+    s.phone,
+    s.date_of_birth,
+    TIMESTAMPDIFF(YEAR, s.date_of_birth, CURDATE()) AS age,
+    CONCAT(IFNULL(s.address_street, ''), ', ', IFNULL(s.address_barangay, ''), ', ', IFNULL(s.address_city, ''), ', ', IFNULL(s.address_province, '')) AS full_address,
+    p.program_code,
+    p.program_name,
+    d.department_name,
+    s.year_level,
+    s.current_semester,
+    s.student_status,
+    s.admission_date,
+    s.admission_type,
+    s.scholarship_status,
+    s.emergency_contact_name,
+    s.emergency_contact_phone,
+    (SELECT COUNT(*) FROM enrollments e WHERE e.student_id = s.id AND e.enrollment_status = 'Enrolled') AS enrolled_courses,
+    (SELECT SUM(cu.units) FROM enrollments e JOIN curriculum cu ON e.curriculum_id = cu.id WHERE e.student_id = s.id AND e.enrollment_status = 'Enrolled') AS total_units,
+    (SELECT SUM(amount_due - amount_paid) FROM payments WHERE student_id = s.id) AS total_balance
+FROM students s
+LEFT JOIN programs p ON s.current_program_id = p.id
+LEFT JOIN departments d ON p.department_id = d.id;
+
+-- View: Active enrollments (current term only)
+CREATE OR REPLACE VIEW vw_active_enrollments AS
+SELECT 
+    e.id AS enrollment_id,
+    s.student_id AS student_number,
+    CONCAT(s.last_name, ', ', s.first_name) AS student_name,
+    p.program_code,
+    s.year_level,
+    c.course_code,
+    c.course_name,
+    c.units,
+    c.course_type,
+    ay.academic_year,
+    ay.semester,
+    e.enrollment_date,
+    CONCAT(IFNULL(i.title, ''), ' ', i.first_name, ' ', i.last_name) AS instructor_name
+FROM enrollments e
+JOIN students s ON e.student_id = s.id
+JOIN curriculum c ON e.curriculum_id = c.id
+JOIN academic_years ay ON e.academic_year_id = ay.id
+LEFT JOIN programs p ON s.current_program_id = p.id
+LEFT JOIN instructors i ON e.instructor_id = i.id
+WHERE e.enrollment_status = 'Enrolled'
+  AND ay.is_current = TRUE
+ORDER BY s.last_name, c.course_code;
+
+-- ============================================================
+-- ADDITIONAL PROCEDURES: Common operations
+-- ============================================================
+
+DELIMITER //
+
+-- Procedure: Search students with filters
+CREATE PROCEDURE sp_search_students(
+    IN p_search VARCHAR(100),
+    IN p_program_id INT,
+    IN p_year_level VARCHAR(20),
+    IN p_status VARCHAR(20),
+    IN p_limit INT,
+    IN p_offset INT
+)
+BEGIN
+    SET p_limit = IFNULL(p_limit, 50);
+    SET p_offset = IFNULL(p_offset, 0);
+    
+    SELECT 
+        s.id,
+        s.student_id AS student_number,
+        CONCAT(s.last_name, ', ', s.first_name, ' ', IFNULL(s.middle_name, '')) AS full_name,
+        s.email,
+        p.program_code,
+        p.program_name,
+        s.year_level,
+        s.student_status,
+        s.created_at
+    FROM students s
+    LEFT JOIN programs p ON s.current_program_id = p.id
+    WHERE (p_search IS NULL OR p_search = '' OR 
+           s.student_id LIKE CONCAT('%', p_search, '%') OR
+           s.first_name LIKE CONCAT('%', p_search, '%') OR
+           s.last_name LIKE CONCAT('%', p_search, '%') OR
+           s.email LIKE CONCAT('%', p_search, '%'))
+      AND (p_program_id IS NULL OR s.current_program_id = p_program_id)
+      AND (p_year_level IS NULL OR p_year_level = '' OR s.year_level = p_year_level)
+      AND (p_status IS NULL OR p_status = '' OR s.student_status = p_status)
+    ORDER BY s.last_name, s.first_name
+    LIMIT p_limit OFFSET p_offset;
+END//
+
+-- Procedure: Get course roster (all students in a course)
+CREATE PROCEDURE sp_get_course_roster(
+    IN p_curriculum_id INT,
+    IN p_academic_year_id INT
+)
+BEGIN
+    SELECT 
+        s.student_id AS student_number,
+        CONCAT(s.last_name, ', ', s.first_name) AS student_name,
+        p.program_code,
+        s.year_level,
+        e.enrollment_date,
+        e.grade,
+        e.grade_status,
+        CONCAT(IFNULL(i.title, ''), ' ', i.first_name, ' ', i.last_name) AS instructor_name
+    FROM enrollments e
+    JOIN students s ON e.student_id = s.id
+    LEFT JOIN programs p ON s.current_program_id = p.id
+    LEFT JOIN instructors i ON e.instructor_id = i.id
+    WHERE e.curriculum_id = p_curriculum_id
+      AND (p_academic_year_id IS NULL OR e.academic_year_id = p_academic_year_id)
+      AND e.enrollment_status = 'Enrolled'
+    ORDER BY s.last_name, s.first_name;
+END//
+
+-- Procedure: Get instructor schedule
+CREATE PROCEDURE sp_get_instructor_schedule(IN p_instructor_id INT)
+BEGIN
+    SELECT 
+        c.course_code,
+        c.course_name,
+        c.units,
+        cs.day_of_week,
+        TIME_FORMAT(cs.start_time, '%h:%i %p') AS start_time,
+        TIME_FORMAT(cs.end_time, '%h:%i %p') AS end_time,
+        CONCAT(cs.room, ', ', cs.building) AS location,
+        cs.class_type,
+        COUNT(DISTINCT e.student_id) AS student_count
+    FROM class_schedules cs
+    JOIN enrollments e ON cs.enrollment_id = e.id
+    JOIN curriculum c ON e.curriculum_id = c.id
+    WHERE (cs.instructor_id = p_instructor_id OR e.instructor_id = p_instructor_id)
+      AND cs.is_active = TRUE
+      AND e.enrollment_status = 'Enrolled'
+    GROUP BY c.id, cs.day_of_week, cs.start_time, cs.end_time, cs.room, cs.building, cs.class_type
+    ORDER BY FIELD(cs.day_of_week, 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'),
+             cs.start_time;
+END//
+
+-- Procedure: Get academic statistics (dashboard)
+CREATE PROCEDURE sp_get_academic_statistics()
+BEGIN
+    SELECT 
+        (SELECT COUNT(*) FROM students WHERE student_status = 'Active') AS active_students,
+        (SELECT COUNT(*) FROM students WHERE student_status = 'Graduated') AS graduated_students,
+        (SELECT COUNT(*) FROM instructors WHERE is_active = TRUE) AS active_instructors,
+        (SELECT COUNT(*) FROM programs WHERE is_active = TRUE) AS active_programs,
+        (SELECT COUNT(*) FROM departments WHERE is_active = TRUE) AS active_departments,
+        (SELECT COUNT(*) FROM enrollments WHERE enrollment_status = 'Enrolled') AS current_enrollments,
+        (SELECT COUNT(*) FROM curriculum WHERE is_active = TRUE) AS active_courses,
+        (SELECT SUM(amount_due) FROM payments) AS total_fees_due,
+        (SELECT SUM(amount_paid) FROM payments) AS total_fees_collected,
+        (SELECT SUM(amount_due - amount_paid) FROM payments) AS total_outstanding_balance;
+END//
+
+-- ============================================================
+-- DEBUG/MAINTENANCE PROCEDURES
+-- ============================================================
+
+-- Procedure: Check data integrity (find orphan records)
+CREATE PROCEDURE sp_check_data_integrity()
+BEGIN
+    -- Check for orphan enrollments (no student)
+    SELECT 'Orphan Enrollments (no student)' AS check_type, COUNT(*) AS count
+    FROM enrollments e
+    LEFT JOIN students s ON e.student_id = s.id
+    WHERE s.id IS NULL
+    
+    UNION ALL
+    
+    -- Check for orphan enrollments (no curriculum)
+    SELECT 'Orphan Enrollments (no curriculum)', COUNT(*)
+    FROM enrollments e
+    LEFT JOIN curriculum c ON e.curriculum_id = c.id
+    WHERE c.id IS NULL
+    
+    UNION ALL
+    
+    -- Check for orphan schedules (no enrollment)
+    SELECT 'Orphan Schedules (no enrollment)', COUNT(*)
+    FROM class_schedules cs
+    LEFT JOIN enrollments e ON cs.enrollment_id = e.id
+    WHERE e.id IS NULL
+    
+    UNION ALL
+    
+    -- Check for orphan payments (no student)
+    SELECT 'Orphan Payments (no student)', COUNT(*)
+    FROM payments p
+    LEFT JOIN students s ON p.student_id = s.id
+    WHERE s.id IS NULL
+    
+    UNION ALL
+    
+    -- Check for students without program
+    SELECT 'Students without program', COUNT(*)
+    FROM students
+    WHERE current_program_id IS NULL
+    
+    UNION ALL
+    
+    -- Check for enrollments without grades (past terms)
+    SELECT 'Enrollments pending grades', COUNT(*)
+    FROM enrollments e
+    JOIN academic_years ay ON e.academic_year_id = ay.id
+    WHERE e.grade IS NULL 
+      AND e.enrollment_status = 'Enrolled'
+      AND ay.status = 'Completed'
+    
+    UNION ALL
+    
+    -- Check for duplicate enrollments
+    SELECT 'Duplicate enrollments', COUNT(*) - COUNT(DISTINCT CONCAT(student_id, '-', curriculum_id, '-', academic_year_id))
+    FROM enrollments;
+END//
+
+-- Procedure: Get database statistics (quick overview)
+CREATE PROCEDURE sp_get_database_stats()
+BEGIN
+    SELECT 
+        'departments' AS table_name, COUNT(*) AS row_count FROM departments
+    UNION ALL SELECT 'programs', COUNT(*) FROM programs
+    UNION ALL SELECT 'academic_years', COUNT(*) FROM academic_years
+    UNION ALL SELECT 'curriculum', COUNT(*) FROM curriculum
+    UNION ALL SELECT 'instructors', COUNT(*) FROM instructors
+    UNION ALL SELECT 'students', COUNT(*) FROM students
+    UNION ALL SELECT 'student_programs', COUNT(*) FROM student_programs
+    UNION ALL SELECT 'enrollments', COUNT(*) FROM enrollments
+    UNION ALL SELECT 'class_schedules', COUNT(*) FROM class_schedules
+    UNION ALL SELECT 'payment_types', COUNT(*) FROM payment_types
+    UNION ALL SELECT 'payments', COUNT(*) FROM payments
+    UNION ALL SELECT 'users', COUNT(*) FROM users;
+END//
+
+DELIMITER ;
+
+-- ============================================================
+-- End of Schema v2.1.0
 -- ============================================================
