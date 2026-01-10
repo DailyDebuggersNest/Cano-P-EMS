@@ -408,7 +408,7 @@ include __DIR__ . '/../templates/sidebar.php';
                                         <?php echo sanitize($status); ?>
                                     </span>
                                 </td>
-                                <td>
+                                <td class="date-cell">
                                     <?php echo !empty($student['admission_date']) ? date('M d, Y', strtotime($student['admission_date'])) : '—'; ?>
                                 </td>
                                 <td class="text-center">

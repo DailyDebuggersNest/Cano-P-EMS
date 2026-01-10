@@ -1672,6 +1672,11 @@ th.sortable a:hover {
     display: inline-block;
 }
 
+/* Date display - no wrap */
+.date-cell {
+    white-space: nowrap;
+}
+
 /* Program abbreviation with tooltip */
 .program-abbr {
     display: inline-block;
