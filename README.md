@@ -6,6 +6,7 @@ A modern, professional Student Information System built with PHP, MySQL, CSS, an
 
 ### Core Features
 - **Student Management**: Complete student profiling with bio-data capture
+- **Class Schedule**: Visual timetable and list view for student class schedules
 - **Enrollment History**: Track student enrollments across semesters with grades
 - **Payment Tracking**: Full payment history with multiple payment methods
 - **Secure Login**: Bcrypt password hashing with session management
@@ -17,6 +18,14 @@ A modern, professional Student Information System built with PHP, MySQL, CSS, an
 - Complete Address (Street, Barangay, City, Province, ZIP)
 - Guardian/Emergency Contact Information
 - Academic Information (Program, Year Level, Section)
+
+### Class Schedule (NEW!)
+- **Timetable View**: Visual weekly calendar with color-coded class types
+- **List View**: Day-by-day class listing with full details
+- **Class Types**: Lecture, Laboratory, Tutorial, Seminar, Online, Hybrid
+- **Schedule Stats**: Total hours, lecture/lab breakdown, days per week
+- **Today Indicator**: Highlights current day's schedule
+- **Room & Instructor Info**: Complete class location and faculty details
 
 ### Academic Tracking
 - Enrollment history across all semesters
@@ -34,18 +43,19 @@ A modern, professional Student Information System built with PHP, MySQL, CSS, an
 Cano-P-EMS/
 ├── assets/
 │   ├── css/
-│   │   └── style.css          # Desktop app styling
+│   │   └── style.css          # Desktop app styling (includes schedule styles)
 │   └── js/
-│       └── script.js          # Interactive features
+│       └── script.js          # Interactive features (schedule toggle)
 ├── includes/
 │   ├── auth.php               # Authentication check
 │   ├── db.php                 # Database connection
-│   └── functions.php          # Helper functions (CRUD, utilities)
+│   └── functions.php          # Helper functions (CRUD, schedule utilities)
 ├── pages/
 │   └── students.php           # Student management (list, view, add, edit)
 ├── sql/
 │   ├── sis_schema.sql         # Database schema (tables, indexes)
-│   └── sis_sample_data.sql    # Sample data (20 students with history)
+│   ├── sis_sample_data.sql    # Sample data (20 students with history)
+│   └── schedules_schema.sql   # Schedule table and sample data (NEW!)
 ├── templates/
 │   ├── header.php             # Page header with authentication
 │   └── sidebar.php            # Sidebar navigation
@@ -85,6 +95,7 @@ Cano-P-EMS/
    mysql -u root -e "CREATE DATABASE IF NOT EXISTS ems_O6"
    mysql -u root ems_O6 < sql/sis_schema.sql
    mysql -u root ems_O6 < sql/sis_sample_data.sql
+   mysql -u root ems_O6 < sql/schedules_schema.sql
    ```
    
    Option B - Using phpMyAdmin:
@@ -92,6 +103,7 @@ Cano-P-EMS/
    - Create database: `ems_O6`
    - Import `sql/sis_schema.sql` first
    - Import `sql/sis_sample_data.sql` second
+   - Import `sql/schedules_schema.sql` third (for schedule feature)
 
 4. **Configure database connection** (if needed)
    

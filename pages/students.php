@@ -119,8 +119,8 @@ if (!empty($students)) {
             }
         }
         
-        // Program filter
-        if (!empty($filterProgram) && ($student['program'] ?? '') !== $filterProgram) {
+        // Program filter - check program_name from joined table
+        if (!empty($filterProgram) && ($student['program_name'] ?? '') !== $filterProgram) {
             return false;
         }
         
@@ -129,8 +129,8 @@ if (!empty($students)) {
             return false;
         }
         
-        // Semester filter
-        if (!empty($filterSemester) && ($student['semester'] ?? '') !== $filterSemester) {
+        // Semester filter - use current_semester
+        if (!empty($filterSemester) && ($student['current_semester'] ?? $student['semester'] ?? '') !== $filterSemester) {
             return false;
         }
         
@@ -166,8 +166,8 @@ if (!empty($students)) {
                 $valB = $b['sex'] ?? '';
                 break;
             case 'program':
-                $valA = $a['program'] ?? '';
-                $valB = $b['program'] ?? '';
+                $valA = $a['program_code'] ?? $a['program_name'] ?? '';
+                $valB = $b['program_code'] ?? $b['program_name'] ?? '';
                 break;
             case 'year_level':
                 $valA = $a['year_level'] ?? '';
@@ -232,9 +232,6 @@ include __DIR__ . '/../templates/sidebar.php';
                                     <?php echo sanitize($prog['program_code']); ?>
                                 </option>
                             <?php endforeach; ?>
-                        <?php else: ?>
-                            <option value="Bachelor of Science in Information Technology" <?php echo $filterProgram === 'Bachelor of Science in Information Technology' ? 'selected' : ''; ?>>BSIT</option>
-                            <option value="Bachelor of Science in Computer Science" <?php echo $filterProgram === 'Bachelor of Science in Computer Science' ? 'selected' : ''; ?>>BSCS</option>
                         <?php endif; ?>
                     </select>
                 </div>
@@ -246,24 +243,6 @@ include __DIR__ . '/../templates/sidebar.php';
                         <option value="2nd Year" <?php echo $filterYearLevel === '2nd Year' ? 'selected' : ''; ?>>2nd Year</option>
                         <option value="3rd Year" <?php echo $filterYearLevel === '3rd Year' ? 'selected' : ''; ?>>3rd Year</option>
                         <option value="4th Year" <?php echo $filterYearLevel === '4th Year' ? 'selected' : ''; ?>>4th Year</option>
-                        <option value="5th Year" <?php echo $filterYearLevel === '5th Year' ? 'selected' : ''; ?>>5th Year</option>
-                    </select>
-                </div>
-                
-                <div class="filter-group">
-                    <select name="semester" class="form-control filter-select">
-                        <option value="">All Semesters</option>
-                        <option value="1st Semester" <?php echo $filterSemester === '1st Semester' ? 'selected' : ''; ?>>1st Semester</option>
-                        <option value="2nd Semester" <?php echo $filterSemester === '2nd Semester' ? 'selected' : ''; ?>>2nd Semester</option>
-                        <option value="Summer" <?php echo $filterSemester === 'Summer' ? 'selected' : ''; ?>>Summer</option>
-                    </select>
-                </div>
-                
-                <div class="filter-group">
-                    <select name="sex" class="form-control filter-select">
-                        <option value="">All Sex</option>
-                        <option value="Male" <?php echo $filterSex === 'Male' ? 'selected' : ''; ?>>Male</option>
-                        <option value="Female" <?php echo $filterSex === 'Female' ? 'selected' : ''; ?>>Female</option>
                     </select>
                 </div>
                 
@@ -288,7 +267,7 @@ include __DIR__ . '/../templates/sidebar.php';
     
     <div class="panel">
         <?php 
-        $hasFilters = !empty($searchQuery) || !empty($filterProgram) || !empty($filterYearLevel) || !empty($filterSemester) || !empty($filterStatus) || !empty($filterSex);
+        $hasFilters = !empty($searchQuery) || !empty($filterProgram) || !empty($filterYearLevel) || !empty($filterStatus);
         $totalCount = count($students);
         ?>
         
@@ -325,16 +304,14 @@ include __DIR__ . '/../templates/sidebar.php';
             if (!empty($searchQuery)) $filterParams['search'] = $searchQuery;
             if (!empty($filterProgram)) $filterParams['program'] = $filterProgram;
             if (!empty($filterYearLevel)) $filterParams['year_level'] = $filterYearLevel;
-            if (!empty($filterSemester)) $filterParams['semester'] = $filterSemester;
             if (!empty($filterStatus)) $filterParams['status'] = $filterStatus;
-            if (!empty($filterSex)) $filterParams['sex'] = $filterSex;
             ?>
             <div class="table-container">
                 <table>
                     <thead>
                         <tr>
-                            <th>Seq</th>
-                            <th class="sortable">
+                            <th width="50">No.</th>
+                            <th class="sortable" width="120">
                                 <a href="<?php echo getSortUrl('student_id', $sortBy, $sortOrder, $filterParams); ?>">
                                     <span>Student ID</span>
                                     <?php if ($sortBy === 'student_id'): ?><i class="fas fa-sort-<?php echo $sortOrder === 'asc' ? 'up' : 'down'; ?>"></i><?php else: ?><i class="fas fa-sort sort-inactive"></i><?php endif; ?>
@@ -346,47 +323,49 @@ include __DIR__ . '/../templates/sidebar.php';
                                     <?php if ($sortBy === 'name'): ?><i class="fas fa-sort-<?php echo $sortOrder === 'asc' ? 'up' : 'down'; ?>"></i><?php else: ?><i class="fas fa-sort sort-inactive"></i><?php endif; ?>
                                 </a>
                             </th>
-                            <th class="sortable">
+                            <th class="sortable" width="80">
                                 <a href="<?php echo getSortUrl('sex', $sortBy, $sortOrder, $filterParams); ?>">
                                     <span>Sex</span>
                                     <?php if ($sortBy === 'sex'): ?><i class="fas fa-sort-<?php echo $sortOrder === 'asc' ? 'up' : 'down'; ?>"></i><?php else: ?><i class="fas fa-sort sort-inactive"></i><?php endif; ?>
                                 </a>
                             </th>
-                            <th class="sortable">
+                            <th class="sortable" width="100">
                                 <a href="<?php echo getSortUrl('program', $sortBy, $sortOrder, $filterParams); ?>">
                                     <span>Program</span>
                                     <?php if ($sortBy === 'program'): ?><i class="fas fa-sort-<?php echo $sortOrder === 'asc' ? 'up' : 'down'; ?>"></i><?php else: ?><i class="fas fa-sort sort-inactive"></i><?php endif; ?>
                                 </a>
                             </th>
-                            <th class="sortable">
+                            <th class="sortable" width="100">
                                 <a href="<?php echo getSortUrl('year_level', $sortBy, $sortOrder, $filterParams); ?>">
                                     <span>Year Level</span>
                                     <?php if ($sortBy === 'year_level'): ?><i class="fas fa-sort-<?php echo $sortOrder === 'asc' ? 'up' : 'down'; ?>"></i><?php else: ?><i class="fas fa-sort sort-inactive"></i><?php endif; ?>
                                 </a>
                             </th>
-                            <th class="sortable">
+                            <th class="sortable" width="100">
                                 <a href="<?php echo getSortUrl('status', $sortBy, $sortOrder, $filterParams); ?>">
                                     <span>Status</span>
                                     <?php if ($sortBy === 'status'): ?><i class="fas fa-sort-<?php echo $sortOrder === 'asc' ? 'up' : 'down'; ?>"></i><?php else: ?><i class="fas fa-sort sort-inactive"></i><?php endif; ?>
                                 </a>
                             </th>
-                            <th class="sortable">
+                            <th class="sortable" width="110">
                                 <a href="<?php echo getSortUrl('admission_date', $sortBy, $sortOrder, $filterParams); ?>">
-                                    <span>Edate</span>
+                                    <span>Enrolled</span>
                                     <?php if ($sortBy === 'admission_date'): ?><i class="fas fa-sort-<?php echo $sortOrder === 'asc' ? 'up' : 'down'; ?>"></i><?php else: ?><i class="fas fa-sort sort-inactive"></i><?php endif; ?>
                                 </a>
                             </th>
-                            <th>Actions</th>
+                            <th width="100">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php $seq = 1; foreach ($students as $student): ?>
                             <tr>
-                                <td><?php echo $seq++; ?></td>
-                                <td><span class="student-id"><?php echo sanitize($student['student_id'] ?? 'N/A'); ?></span></td>
+                                <td class="text-center"><?php echo $seq++; ?></td>
+                                <td><code class="student-id"><?php echo sanitize($student['student_id'] ?? 'N/A'); ?></code></td>
                                 <td>
                                     <div class="user-info">
-                                        <div class="user-avatar"><i class="fas fa-user"></i></div>
+                                        <div class="user-avatar">
+                                            <i class="fas fa-<?php echo ($student['sex'] ?? '') === 'Female' ? 'female' : 'male'; ?>"></i>
+                                        </div>
                                         <div>
                                             <strong><?php echo sanitize(getStudentFullName($student, 'formal')); ?></strong>
                                             <br><small class="text-muted"><?php echo sanitize($student['email']); ?></small>
@@ -404,12 +383,15 @@ include __DIR__ . '/../templates/sidebar.php';
                                 </td>
                                 <td>
                                     <?php 
-                                    $program = $student['program'] ?? '';
-                                    if (!empty($program)) {
-                                        $progInfo = getProgramAbbreviation($program);
-                                        echo '<span class="program-abbr" data-tooltip="' . sanitize($progInfo['name']) . '">' . sanitize($progInfo['code']) . '</span>';
+                                    $programCode = $student['program_code'] ?? '';
+                                    $programName = $student['program_name'] ?? '';
+                                    if (!empty($programCode)) {
+                                        echo '<span class="badge badge-primary" title="' . sanitize($programName) . '">' . sanitize($programCode) . '</span>';
+                                    } elseif (!empty($programName)) {
+                                        $progInfo = getProgramAbbreviation($programName);
+                                        echo '<span class="badge badge-primary" title="' . sanitize($progInfo['name']) . '">' . sanitize($progInfo['code']) . '</span>';
                                     } else {
-                                        echo '—';
+                                        echo '<span class="text-muted">—</span>';
                                     }
                                     ?>
                                 </td>
@@ -429,10 +411,16 @@ include __DIR__ . '/../templates/sidebar.php';
                                 <td>
                                     <?php echo !empty($student['admission_date']) ? date('M d, Y', strtotime($student['admission_date'])) : '—'; ?>
                                 </td>
-                                <td>
+                                <td class="text-center">
                                     <div class="table-actions">
                                         <a href="students.php?action=view&id=<?php echo $student['id']; ?>" 
-                                           class="btn btn-outline btn-sm" title="View Profile"><i class="fas fa-eye"></i></a>
+                                           class="btn btn-outline btn-sm" title="View Profile">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a href="students.php?action=edit&id=<?php echo $student['id']; ?>" 
+                                           class="btn btn-outline btn-sm" title="Edit Student">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
                                     </div>
                                 </td>
                             </tr>
@@ -458,6 +446,8 @@ include __DIR__ . '/../templates/sidebar.php';
     $enrollmentStats = getEnrollmentStats($student['id']);
     $payments = getCurrentPayments($student['id']);
     $paymentSummary = getPaymentSummary($student['id']);
+    $schedulesByDay = getStudentSchedulesByDay($student['id']);
+    $scheduleStats = getScheduleStats($student['id']);
     ?>
     
     <div class="page-header">
@@ -490,6 +480,15 @@ include __DIR__ . '/../templates/sidebar.php';
                         <?php echo sanitize($student['student_status'] ?? 'Active'); ?>
                     </span>
                     <span class="badge badge-info"><?php echo sanitize($student['year_level'] ?? ''); ?></span>
+                    <?php if (!empty($student['program_code'])): ?>
+                        <span class="badge badge-primary"><?php echo sanitize($student['program_code']); ?></span>
+                    <?php endif; ?>
+                    <?php if (!empty($student['scholarship_status']) && $student['scholarship_status'] !== 'None'): ?>
+                        <span class="badge badge-purple">
+                            <i class="fas fa-award" style="margin-right: 4px;"></i>
+                            <?php echo sanitize($student['scholarship_status']); ?> Scholar
+                        </span>
+                    <?php endif; ?>
                 </div>
             </div>
             <div class="profile-quick-stats">
@@ -515,6 +514,14 @@ include __DIR__ . '/../templates/sidebar.php';
            class="profile-tab <?php echo $activeTab === 'personal' ? 'active' : ''; ?>">
             <i class="fas fa-user"></i>
             <span>Personal Info</span>
+        </a>
+        <a href="students.php?action=view&id=<?php echo $student['id']; ?>&tab=schedule" 
+           class="profile-tab <?php echo $activeTab === 'schedule' ? 'active' : ''; ?>">
+            <i class="fas fa-calendar-alt"></i>
+            <span>Schedule</span>
+            <?php if ($scheduleStats['total_classes'] > 0): ?>
+                <span class="tab-badge"><?php echo $scheduleStats['total_classes']; ?></span>
+            <?php endif; ?>
         </a>
         <a href="students.php?action=view&id=<?php echo $student['id']; ?>&tab=subjects" 
            class="profile-tab <?php echo $activeTab === 'subjects' ? 'active' : ''; ?>">
@@ -642,6 +649,14 @@ include __DIR__ . '/../templates/sidebar.php';
                             <span><?php echo sanitize($student['guardian_contact'] ?? '—'); ?></span>
                         </div>
                         <div class="info-item">
+                            <label>Guardian Email</label>
+                            <span><?php echo sanitize($student['guardian_email'] ?? '—'); ?></span>
+                        </div>
+                        <div class="info-item">
+                            <label>Guardian Occupation</label>
+                            <span><?php echo sanitize($student['guardian_occupation'] ?? '—'); ?></span>
+                        </div>
+                        <div class="info-item">
                             <label>Guardian Address</label>
                             <span><?php echo sanitize($student['guardian_address'] ?? '—'); ?></span>
                         </div>
@@ -652,6 +667,10 @@ include __DIR__ . '/../templates/sidebar.php';
                         <div class="info-item">
                             <label>Emergency Contact Phone</label>
                             <span><?php echo sanitize($student['emergency_contact_phone'] ?? '—'); ?></span>
+                        </div>
+                        <div class="info-item">
+                            <label>Emergency Contact Relationship</label>
+                            <span><?php echo sanitize($student['emergency_contact_relationship'] ?? '—'); ?></span>
                         </div>
                     </div>
                 </div>
@@ -666,7 +685,22 @@ include __DIR__ . '/../templates/sidebar.php';
                     <div class="info-grid">
                         <div class="info-item">
                             <label>Program</label>
-                            <span><?php echo sanitize($student['program'] ?? '—'); ?></span>
+                            <span>
+                                <?php 
+                                if (!empty($student['program_code'])) {
+                                    echo sanitize($student['program_code']);
+                                    if (!empty($student['program_name'])) {
+                                        echo ' - ' . sanitize($student['program_name']);
+                                    }
+                                } else {
+                                    echo '—';
+                                }
+                                ?>
+                            </span>
+                        </div>
+                        <div class="info-item">
+                            <label>Department</label>
+                            <span><?php echo sanitize($student['department_name'] ?? '—'); ?></span>
                         </div>
                         <div class="info-item">
                             <label>Year Level</label>
@@ -674,15 +708,27 @@ include __DIR__ . '/../templates/sidebar.php';
                         </div>
                         <div class="info-item">
                             <label>Semester</label>
-                            <span><?php echo sanitize($student['semester'] ?? '—'); ?></span>
+                            <span><?php echo sanitize($student['current_semester'] ?? $student['semester'] ?? '—'); ?></span>
                         </div>
                         <div class="info-item">
                             <label>Section</label>
                             <span><?php echo sanitize($student['section'] ?? '—'); ?></span>
                         </div>
                         <div class="info-item">
+                            <label>Admission Type</label>
+                            <span><?php echo sanitize($student['admission_type'] ?? '—'); ?></span>
+                        </div>
+                        <div class="info-item">
                             <label>Admission Date</label>
                             <span><?php echo !empty($student['admission_date']) ? date('F j, Y', strtotime($student['admission_date'])) : '—'; ?></span>
+                        </div>
+                        <div class="info-item">
+                            <label>Scholarship</label>
+                            <span><?php echo sanitize($student['scholarship_status'] ?? 'None'); ?></span>
+                        </div>
+                        <div class="info-item">
+                            <label>LRN</label>
+                            <span><?php echo sanitize($student['lrn'] ?? '—'); ?></span>
                         </div>
                         <div class="info-item">
                             <label>Student Status</label>
@@ -691,6 +737,284 @@ include __DIR__ . '/../templates/sidebar.php';
                     </div>
                 </div>
             </div>
+        </div>
+        
+        <?php elseif ($activeTab === 'schedule'): ?>
+        <!-- ==================== SCHEDULE TAB ==================== -->
+        <div class="schedule-tab-content">
+            
+            <?php if ($scheduleStats['total_classes'] > 0): ?>
+            
+            <!-- Schedule Overview Cards -->
+            <div class="schedule-overview-cards">
+                <div class="schedule-stat-card">
+                    <div class="stat-icon bg-primary">
+                        <i class="fas fa-calendar-check"></i>
+                    </div>
+                    <div class="stat-content">
+                        <span class="stat-number"><?php echo $scheduleStats['total_classes']; ?></span>
+                        <span class="stat-text">Classes/Week</span>
+                    </div>
+                </div>
+                <div class="schedule-stat-card">
+                    <div class="stat-icon bg-info">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="stat-content">
+                        <span class="stat-number"><?php echo number_format($scheduleStats['total_hours'], 1); ?></span>
+                        <span class="stat-text">Hours/Week</span>
+                    </div>
+                </div>
+                <div class="schedule-stat-card">
+                    <div class="stat-icon bg-success">
+                        <i class="fas fa-chalkboard-teacher"></i>
+                    </div>
+                    <div class="stat-content">
+                        <span class="stat-number"><?php echo number_format($scheduleStats['lecture_hours'], 1); ?></span>
+                        <span class="stat-text">Lecture Hours</span>
+                    </div>
+                </div>
+                <div class="schedule-stat-card">
+                    <div class="stat-icon bg-warning">
+                        <i class="fas fa-flask"></i>
+                    </div>
+                    <div class="stat-content">
+                        <span class="stat-number"><?php echo number_format($scheduleStats['lab_hours'], 1); ?></span>
+                        <span class="stat-text">Lab Hours</span>
+                    </div>
+                </div>
+                <div class="schedule-stat-card">
+                    <div class="stat-icon bg-danger">
+                        <i class="fas fa-calendar-day"></i>
+                    </div>
+                    <div class="stat-content">
+                        <span class="stat-number"><?php echo $scheduleStats['days_with_classes']; ?></span>
+                        <span class="stat-text">Days/Week</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- View Toggle -->
+            <div class="schedule-view-toggle">
+                <button type="button" class="view-btn active" data-view="timetable" onclick="switchScheduleView('timetable')">
+                    <i class="fas fa-th"></i> Timetable View
+                </button>
+                <button type="button" class="view-btn" data-view="list" onclick="switchScheduleView('list')">
+                    <i class="fas fa-list"></i> List View
+                </button>
+            </div>
+            
+            <!-- Timetable View -->
+            <div id="timetable-view" class="schedule-view-content">
+                <div class="panel timetable-panel">
+                    <div class="panel-header">
+                        <h3><i class="fas fa-calendar-week"></i> Weekly Class Schedule</h3>
+                        <div class="panel-header-actions">
+                            <span class="semester-info">
+                                <?php echo sanitize($student['semester'] ?? '1st Semester'); ?> • S.Y. 2025-2026
+                            </span>
+                        </div>
+                    </div>
+                    <div class="panel-body timetable-body">
+                        <div class="timetable-container">
+                            <table class="timetable">
+                                <thead>
+                                    <tr>
+                                        <th class="time-header">Time</th>
+                                        <?php 
+                                        $weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+                                        foreach ($weekdays as $day): 
+                                            $hasClasses = !empty($schedulesByDay[$day]);
+                                        ?>
+                                            <th class="day-header <?php echo $hasClasses ? 'has-classes' : ''; ?> <?php echo date('l') === $day ? 'today' : ''; ?>">
+                                                <span class="day-short"><?php echo substr($day, 0, 3); ?></span>
+                                                <span class="day-full"><?php echo $day; ?></span>
+                                                <?php if (date('l') === $day): ?>
+                                                    <span class="today-indicator">Today</span>
+                                                <?php endif; ?>
+                                            </th>
+                                        <?php endforeach; ?>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php 
+                                    // Generate time slots from 7 AM to 9 PM
+                                    $timeSlots = [];
+                                    for ($hour = 7; $hour <= 21; $hour++) {
+                                        $timeSlots[] = sprintf('%02d:00:00', $hour);
+                                    }
+                                    
+                                    foreach ($timeSlots as $index => $timeSlot):
+                                        $displayTime = date('g:i A', strtotime($timeSlot));
+                                    ?>
+                                    <tr class="time-row">
+                                        <td class="time-cell"><?php echo $displayTime; ?></td>
+                                        <?php foreach ($weekdays as $day): ?>
+                                            <td class="schedule-cell" data-day="<?php echo $day; ?>" data-time="<?php echo $timeSlot; ?>">
+                                                <?php 
+                                                // Check if any class starts at this time slot
+                                                if (!empty($schedulesByDay[$day])) {
+                                                    foreach ($schedulesByDay[$day] as $class) {
+                                                        $classStart = date('H:00:00', strtotime($class['start_time']));
+                                                        if ($classStart === $timeSlot) {
+                                                            $startTime = strtotime($class['start_time']);
+                                                            $endTime = strtotime($class['end_time']);
+                                                            $durationHours = ($endTime - $startTime) / 3600;
+                                                            $colorClass = getClassTypeColor($class['class_type']);
+                                                            $blockHeight = ($durationHours * 48) - 4;
+                                                            $isShortBlock = $durationHours <= 1;
+                                                ?>
+                                                <div class="class-block <?php echo $colorClass; ?> <?php echo $isShortBlock ? 'short-block' : ''; ?>" 
+                                                     style="height: <?php echo $blockHeight; ?>px;" 
+                                                     data-duration="<?php echo $durationHours; ?>"
+                                                     title="<?php echo sanitize($class['subject_code'] . ' - ' . $class['subject_name'] . ' (' . formatScheduleTime($class['start_time']) . ' - ' . formatScheduleTime($class['end_time']) . ')'); ?>">
+                                                    <div class="class-block-content">
+                                                        <span class="class-code"><?php echo sanitize($class['subject_code']); ?></span>
+                                                        <span class="class-name"><?php echo sanitize($class['subject_name']); ?></span>
+                                                        <span class="class-time">
+                                                            <?php echo formatScheduleTime($class['start_time']); ?> - <?php echo formatScheduleTime($class['end_time']); ?>
+                                                        </span>
+                                                        <span class="class-details">
+                                                            <i class="<?php echo getClassTypeIcon($class['class_type']); ?>"></i>
+                                                            <?php echo sanitize($class['room'] ?? 'TBA'); ?>
+                                                            <?php if (!empty($class['building'])): ?>
+                                                                • <?php echo sanitize($class['building']); ?>
+                                                            <?php endif; ?>
+                                                        </span>
+                                                        <?php if (!empty($class['instructor_last_name'])): ?>
+                                                        <span class="class-instructor">
+                                                            <i class="fas fa-user-tie"></i>
+                                                            <?php echo sanitize(trim($class['instructor_title'] . ' ' . $class['instructor_first_name'] . ' ' . $class['instructor_last_name'])); ?>
+                                                        </span>
+                                                        <?php endif; ?>
+                                                    </div>
+                                                </div>
+                                                <?php 
+                                                        }
+                                                    }
+                                                }
+                                                ?>
+                                            </td>
+                                        <?php endforeach; ?>
+                                    </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- List View -->
+            <div id="list-view" class="schedule-view-content" style="display: none;">
+                <div class="panel">
+                    <div class="panel-header">
+                        <h3><i class="fas fa-list-alt"></i> Class Schedule (List)</h3>
+                    </div>
+                    <div class="panel-body schedule-list-body">
+                        <?php foreach ($weekdays as $day): ?>
+                            <?php if (!empty($schedulesByDay[$day])): ?>
+                            <div class="day-schedule-block <?php echo date('l') === $day ? 'today' : ''; ?>">
+                                <div class="day-header-block">
+                                    <h4>
+                                        <i class="fas fa-calendar-day"></i>
+                                        <?php echo $day; ?>
+                                        <?php if (date('l') === $day): ?>
+                                            <span class="today-badge">Today</span>
+                                        <?php endif; ?>
+                                    </h4>
+                                    <span class="class-count"><?php echo count($schedulesByDay[$day]); ?> class<?php echo count($schedulesByDay[$day]) > 1 ? 'es' : ''; ?></span>
+                                </div>
+                                <div class="day-classes">
+                                    <?php foreach ($schedulesByDay[$day] as $class): 
+                                        $colorClass = getClassTypeColor($class['class_type']);
+                                    ?>
+                                    <div class="class-card <?php echo $colorClass; ?>">
+                                        <div class="class-time-block">
+                                            <span class="start-time"><?php echo formatScheduleTime($class['start_time']); ?></span>
+                                            <span class="time-separator">–</span>
+                                            <span class="end-time"><?php echo formatScheduleTime($class['end_time']); ?></span>
+                                        </div>
+                                        <div class="class-info-block">
+                                            <div class="class-main-info">
+                                                <code class="subject-code-badge"><?php echo sanitize($class['subject_code']); ?></code>
+                                                <span class="subject-name"><?php echo sanitize($class['subject_name']); ?></span>
+                                            </div>
+                                            <div class="class-meta-info">
+                                                <span class="meta-item">
+                                                    <i class="<?php echo getClassTypeIcon($class['class_type']); ?>"></i>
+                                                    <?php echo sanitize($class['class_type']); ?>
+                                                </span>
+                                                <span class="meta-item">
+                                                    <i class="fas fa-door-open"></i>
+                                                    <?php echo sanitize($class['room'] ?? 'TBA'); ?>
+                                                </span>
+                                                <?php if (!empty($class['building'])): ?>
+                                                <span class="meta-item">
+                                                    <i class="fas fa-building"></i>
+                                                    <?php echo sanitize($class['building']); ?>
+                                                </span>
+                                                <?php endif; ?>
+                                                <?php if (!empty($class['instructor_last_name'])): ?>
+                                                <span class="meta-item">
+                                                    <i class="fas fa-user-tie"></i>
+                                                    <?php echo sanitize(trim($class['instructor_title'] . ' ' . $class['instructor_first_name'] . ' ' . $class['instructor_last_name'])); ?>
+                                                </span>
+                                                <?php endif; ?>
+                                            </div>
+                                        </div>
+                                        <div class="class-units">
+                                            <span class="units-badge"><?php echo $class['units']; ?> units</span>
+                                        </div>
+                                    </div>
+                                    <?php endforeach; ?>
+                                </div>
+                            </div>
+                            <?php endif; ?>
+                        <?php endforeach; ?>
+                        
+                        <?php 
+                        // Check if there are no classes at all
+                        $hasAnyClasses = false;
+                        foreach ($weekdays as $day) {
+                            if (!empty($schedulesByDay[$day])) {
+                                $hasAnyClasses = true;
+                                break;
+                            }
+                        }
+                        if (!$hasAnyClasses): 
+                        ?>
+                        <div class="empty-state-small">
+                            <i class="fas fa-calendar-times"></i>
+                            <p>No classes scheduled for this semester.</p>
+                        </div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Schedule Legend -->
+            <div class="schedule-legend">
+                <span class="legend-title">Class Types:</span>
+                <span class="legend-item schedule-lecture"><i class="fas fa-chalkboard-teacher"></i> Lecture</span>
+                <span class="legend-item schedule-lab"><i class="fas fa-flask"></i> Laboratory</span>
+                <span class="legend-item schedule-tutorial"><i class="fas fa-users"></i> Tutorial</span>
+                <span class="legend-item schedule-online"><i class="fas fa-laptop"></i> Online</span>
+                <span class="legend-item schedule-hybrid"><i class="fas fa-random"></i> Hybrid</span>
+            </div>
+            
+            <?php else: ?>
+            <!-- No Schedule Available -->
+            <div class="panel">
+                <div class="panel-body">
+                    <div class="empty-state">
+                        <div class="empty-icon"><i class="fas fa-calendar-times"></i></div>
+                        <h3>No Schedule Available</h3>
+                        <p>Class schedule has not been set up for this student's current semester enrollment.</p>
+                    </div>
+                </div>
+            </div>
+            <?php endif; ?>
         </div>
         
         <?php elseif ($activeTab === 'subjects'): ?>
@@ -1307,13 +1631,25 @@ include __DIR__ . '/../templates/sidebar.php';
                     </div>
                 </div>
                 
-                <div class="form-group">
-                    <label for="guardian_address">Guardian Address</label>
-                    <input type="text" id="guardian_address" name="guardian_address" class="form-control" 
-                           placeholder="Complete address if different from student">
+                <div class="form-row form-row-3">
+                    <div class="form-group">
+                        <label for="guardian_email">Guardian Email</label>
+                        <input type="email" id="guardian_email" name="guardian_email" class="form-control" 
+                               placeholder="guardian@email.com">
+                    </div>
+                    <div class="form-group">
+                        <label for="guardian_occupation">Guardian Occupation</label>
+                        <input type="text" id="guardian_occupation" name="guardian_occupation" class="form-control" 
+                               placeholder="e.g., Engineer, Teacher">
+                    </div>
+                    <div class="form-group">
+                        <label for="guardian_address">Guardian Address</label>
+                        <input type="text" id="guardian_address" name="guardian_address" class="form-control" 
+                               placeholder="If different from student">
+                    </div>
                 </div>
                 
-                <div class="form-row">
+                <div class="form-row form-row-3">
                     <div class="form-group">
                         <label for="emergency_contact_name">Emergency Contact Name</label>
                         <input type="text" id="emergency_contact_name" name="emergency_contact_name" class="form-control" 
@@ -1323,6 +1659,18 @@ include __DIR__ . '/../templates/sidebar.php';
                         <label for="emergency_contact_phone">Emergency Contact Phone</label>
                         <input type="tel" id="emergency_contact_phone" name="emergency_contact_phone" class="form-control" 
                                placeholder="+63 917 123 4567">
+                    </div>
+                    <div class="form-group">
+                        <label for="emergency_contact_relationship">Relationship</label>
+                        <select id="emergency_contact_relationship" name="emergency_contact_relationship" class="form-control">
+                            <option value="">Select Relationship</option>
+                            <option value="Father">Father</option>
+                            <option value="Mother">Mother</option>
+                            <option value="Guardian">Guardian</option>
+                            <option value="Spouse">Spouse</option>
+                            <option value="Sibling">Sibling</option>
+                            <option value="Other">Other</option>
+                        </select>
                     </div>
                 </div>
             </div>
@@ -1336,19 +1684,15 @@ include __DIR__ . '/../templates/sidebar.php';
             <div class="panel-body">
                 <div class="form-row form-row-3">
                     <div class="form-group">
-                        <label for="program">Program</label>
-                        <select id="program" name="program" class="form-control">
+                        <label for="current_program_id">Program</label>
+                        <select id="current_program_id" name="current_program_id" class="form-control">
                             <option value="">Select Program</option>
                             <?php if (!empty($programs)): ?>
                                 <?php foreach ($programs as $prog): ?>
-                                    <option value="<?php echo sanitize($prog['program_name']); ?>">
+                                    <option value="<?php echo $prog['id']; ?>">
                                         <?php echo sanitize($prog['program_code'] . ' - ' . $prog['program_name']); ?>
                                     </option>
                                 <?php endforeach; ?>
-                            <?php else: ?>
-                                <option value="Bachelor of Science in Information Technology">BSIT - Information Technology</option>
-                                <option value="Bachelor of Science in Computer Science">BSCS - Computer Science</option>
-                                <option value="Bachelor of Science in Information Systems">BSIS - Information Systems</option>
                             <?php endif; ?>
                         </select>
                     </div>
@@ -1363,8 +1707,8 @@ include __DIR__ . '/../templates/sidebar.php';
                         </select>
                     </div>
                     <div class="form-group">
-                        <label for="semester">Semester</label>
-                        <select id="semester" name="semester" class="form-control">
+                        <label for="current_semester">Semester</label>
+                        <select id="current_semester" name="current_semester" class="form-control">
                             <option value="1st Semester">1st Semester</option>
                             <option value="2nd Semester">2nd Semester</option>
                             <option value="Summer">Summer</option>
@@ -1376,11 +1720,25 @@ include __DIR__ . '/../templates/sidebar.php';
                     <div class="form-group">
                         <label for="section">Section</label>
                         <input type="text" id="section" name="section" class="form-control" 
-                               placeholder="A, B, C...">
+                               placeholder="e.g., BSIT-2A">
+                    </div>
+                    <div class="form-group">
+                        <label for="admission_type">Admission Type</label>
+                        <select id="admission_type" name="admission_type" class="form-control">
+                            <option value="Freshman">Freshman</option>
+                            <option value="Transferee">Transferee</option>
+                            <option value="Returnee">Returnee</option>
+                            <option value="Cross-enrollee">Cross-enrollee</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="lrn">LRN (Learner Reference No.)</label>
+                        <input type="text" id="lrn" name="lrn" class="form-control" 
+                               placeholder="12-digit LRN" maxlength="12">
                     </div>
                 </div>
                 
-                <div class="form-row">
+                <div class="form-row form-row-3">
                     <div class="form-group">
                         <label for="admission_date">Admission Date</label>
                         <input type="date" id="admission_date" name="admission_date" class="form-control" 
@@ -1600,13 +1958,25 @@ include __DIR__ . '/../templates/sidebar.php';
                     </div>
                 </div>
                 
-                <div class="form-group">
-                    <label for="guardian_address">Guardian Address</label>
-                    <input type="text" id="guardian_address" name="guardian_address" class="form-control" 
-                           value="<?php echo sanitize($student['guardian_address'] ?? ''); ?>">
+                <div class="form-row form-row-3">
+                    <div class="form-group">
+                        <label for="guardian_email">Guardian Email</label>
+                        <input type="email" id="guardian_email" name="guardian_email" class="form-control" 
+                               value="<?php echo sanitize($student['guardian_email'] ?? ''); ?>">
+                    </div>
+                    <div class="form-group">
+                        <label for="guardian_occupation">Guardian Occupation</label>
+                        <input type="text" id="guardian_occupation" name="guardian_occupation" class="form-control" 
+                               value="<?php echo sanitize($student['guardian_occupation'] ?? ''); ?>">
+                    </div>
+                    <div class="form-group">
+                        <label for="guardian_address">Guardian Address</label>
+                        <input type="text" id="guardian_address" name="guardian_address" class="form-control" 
+                               value="<?php echo sanitize($student['guardian_address'] ?? ''); ?>">
+                    </div>
                 </div>
                 
-                <div class="form-row">
+                <div class="form-row form-row-3">
                     <div class="form-group">
                         <label for="emergency_contact_name">Emergency Contact Name</label>
                         <input type="text" id="emergency_contact_name" name="emergency_contact_name" class="form-control" 
@@ -1616,6 +1986,18 @@ include __DIR__ . '/../templates/sidebar.php';
                         <label for="emergency_contact_phone">Emergency Contact Phone</label>
                         <input type="tel" id="emergency_contact_phone" name="emergency_contact_phone" class="form-control" 
                                value="<?php echo sanitize($student['emergency_contact_phone'] ?? ''); ?>">
+                    </div>
+                    <div class="form-group">
+                        <label for="emergency_contact_relationship">Relationship</label>
+                        <select id="emergency_contact_relationship" name="emergency_contact_relationship" class="form-control">
+                            <option value="">Select Relationship</option>
+                            <option value="Father" <?php echo ($student['emergency_contact_relationship'] ?? '') === 'Father' ? 'selected' : ''; ?>>Father</option>
+                            <option value="Mother" <?php echo ($student['emergency_contact_relationship'] ?? '') === 'Mother' ? 'selected' : ''; ?>>Mother</option>
+                            <option value="Guardian" <?php echo ($student['emergency_contact_relationship'] ?? '') === 'Guardian' ? 'selected' : ''; ?>>Guardian</option>
+                            <option value="Spouse" <?php echo ($student['emergency_contact_relationship'] ?? '') === 'Spouse' ? 'selected' : ''; ?>>Spouse</option>
+                            <option value="Sibling" <?php echo ($student['emergency_contact_relationship'] ?? '') === 'Sibling' ? 'selected' : ''; ?>>Sibling</option>
+                            <option value="Other" <?php echo ($student['emergency_contact_relationship'] ?? '') === 'Other' ? 'selected' : ''; ?>>Other</option>
+                        </select>
                     </div>
                 </div>
             </div>
@@ -1629,19 +2011,16 @@ include __DIR__ . '/../templates/sidebar.php';
             <div class="panel-body">
                 <div class="form-row form-row-3">
                     <div class="form-group">
-                        <label for="program">Program</label>
-                        <select id="program" name="program" class="form-control">
+                        <label for="current_program_id">Program</label>
+                        <select id="current_program_id" name="current_program_id" class="form-control">
                             <option value="">Select Program</option>
                             <?php if (!empty($programs)): ?>
                                 <?php foreach ($programs as $prog): ?>
-                                    <option value="<?php echo sanitize($prog['program_name']); ?>"
-                                            <?php echo ($student['program'] ?? '') === $prog['program_name'] ? 'selected' : ''; ?>>
+                                    <option value="<?php echo $prog['id']; ?>"
+                                            <?php echo ($student['current_program_id'] ?? '') == $prog['id'] ? 'selected' : ''; ?>>
                                         <?php echo sanitize($prog['program_code'] . ' - ' . $prog['program_name']); ?>
                                     </option>
                                 <?php endforeach; ?>
-                            <?php else: ?>
-                                <option value="Bachelor of Science in Information Technology" <?php echo ($student['program'] ?? '') === 'Bachelor of Science in Information Technology' ? 'selected' : ''; ?>>BSIT - Information Technology</option>
-                                <option value="Bachelor of Science in Computer Science" <?php echo ($student['program'] ?? '') === 'Bachelor of Science in Computer Science' ? 'selected' : ''; ?>>BSCS - Computer Science</option>
                             <?php endif; ?>
                         </select>
                     </div>
@@ -1656,11 +2035,12 @@ include __DIR__ . '/../templates/sidebar.php';
                         </select>
                     </div>
                     <div class="form-group">
-                        <label for="semester">Semester</label>
-                        <select id="semester" name="semester" class="form-control">
-                            <option value="1st Semester" <?php echo ($student['semester'] ?? '') === '1st Semester' ? 'selected' : ''; ?>>1st Semester</option>
-                            <option value="2nd Semester" <?php echo ($student['semester'] ?? '') === '2nd Semester' ? 'selected' : ''; ?>>2nd Semester</option>
-                            <option value="Summer" <?php echo ($student['semester'] ?? '') === 'Summer' ? 'selected' : ''; ?>>Summer</option>
+                        <label for="current_semester">Semester</label>
+                        <select id="current_semester" name="current_semester" class="form-control">
+                            <?php $currentSem = $student['current_semester'] ?? $student['semester'] ?? ''; ?>
+                            <option value="1st Semester" <?php echo $currentSem === '1st Semester' ? 'selected' : ''; ?>>1st Semester</option>
+                            <option value="2nd Semester" <?php echo $currentSem === '2nd Semester' ? 'selected' : ''; ?>>2nd Semester</option>
+                            <option value="Summer" <?php echo $currentSem === 'Summer' ? 'selected' : ''; ?>>Summer</option>
                         </select>
                     </div>
                 </div>
@@ -1669,11 +2049,25 @@ include __DIR__ . '/../templates/sidebar.php';
                     <div class="form-group">
                         <label for="section">Section</label>
                         <input type="text" id="section" name="section" class="form-control" 
-                               value="<?php echo sanitize($student['section'] ?? ''); ?>">
+                               value="<?php echo sanitize($student['section'] ?? ''); ?>" placeholder="e.g., BSIT-2A">
+                    </div>
+                    <div class="form-group">
+                        <label for="admission_type">Admission Type</label>
+                        <select id="admission_type" name="admission_type" class="form-control">
+                            <option value="Freshman" <?php echo ($student['admission_type'] ?? '') === 'Freshman' ? 'selected' : ''; ?>>Freshman</option>
+                            <option value="Transferee" <?php echo ($student['admission_type'] ?? '') === 'Transferee' ? 'selected' : ''; ?>>Transferee</option>
+                            <option value="Returnee" <?php echo ($student['admission_type'] ?? '') === 'Returnee' ? 'selected' : ''; ?>>Returnee</option>
+                            <option value="Cross-enrollee" <?php echo ($student['admission_type'] ?? '') === 'Cross-enrollee' ? 'selected' : ''; ?>>Cross-enrollee</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="lrn">LRN (Learner Reference No.)</label>
+                        <input type="text" id="lrn" name="lrn" class="form-control" 
+                               value="<?php echo sanitize($student['lrn'] ?? ''); ?>" maxlength="12">
                     </div>
                 </div>
                 
-                <div class="form-row">
+                <div class="form-row form-row-3">
                     <div class="form-group">
                         <label for="admission_date">Admission Date</label>
                         <input type="date" id="admission_date" name="admission_date" class="form-control" 
@@ -1687,6 +2081,16 @@ include __DIR__ . '/../templates/sidebar.php';
                             <option value="On Leave" <?php echo ($student['student_status'] ?? '') === 'On Leave' ? 'selected' : ''; ?>>On Leave</option>
                             <option value="Graduated" <?php echo ($student['student_status'] ?? '') === 'Graduated' ? 'selected' : ''; ?>>Graduated</option>
                             <option value="Dropped" <?php echo ($student['student_status'] ?? '') === 'Dropped' ? 'selected' : ''; ?>>Dropped</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="scholarship_status">Scholarship Status</label>
+                        <select id="scholarship_status" name="scholarship_status" class="form-control">
+                            <option value="None" <?php echo ($student['scholarship_status'] ?? 'None') === 'None' ? 'selected' : ''; ?>>None</option>
+                            <option value="Academic Scholar" <?php echo ($student['scholarship_status'] ?? '') === 'Academic Scholar' ? 'selected' : ''; ?>>Academic Scholar</option>
+                            <option value="Athletic Scholar" <?php echo ($student['scholarship_status'] ?? '') === 'Athletic Scholar' ? 'selected' : ''; ?>>Athletic Scholar</option>
+                            <option value="Government Scholar" <?php echo ($student['scholarship_status'] ?? '') === 'Government Scholar' ? 'selected' : ''; ?>>Government Scholar</option>
+                            <option value="Private Scholar" <?php echo ($student['scholarship_status'] ?? '') === 'Private Scholar' ? 'selected' : ''; ?>>Private Scholar</option>
                         </select>
                     </div>
                 </div>

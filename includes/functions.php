@@ -15,21 +15,29 @@ require_once __DIR__ . '/db.php';
 // ============================================
 
 /**
- * Get all students from the database
+ * Get all students from the database with program info
  * 
  * @return array List of all students
  */
 function getAllStudents() {
     global $db;
     
-    $sql = "SELECT * FROM students ORDER BY last_name, first_name";
-    $stmt = $db->query($sql);
-    
-    return $stmt->fetchAll();
+    try {
+        $sql = "SELECT s.*, p.program_code, p.program_name,
+                       s.current_semester as semester
+                FROM students s
+                LEFT JOIN programs p ON s.current_program_id = p.id
+                ORDER BY s.last_name, s.first_name";
+        $stmt = $db->query($sql);
+        
+        return $stmt->fetchAll();
+    } catch (PDOException $e) {
+        return [];
+    }
 }
 
 /**
- * Get a single student by their ID
+ * Get a single student by their ID with program info
  * 
  * @param int $id The student's ID
  * @return array|false Student data or false if not found
@@ -37,11 +45,21 @@ function getAllStudents() {
 function getStudentById($id) {
     global $db;
     
-    $sql = "SELECT * FROM students WHERE id = :id";
-    $stmt = $db->prepare($sql);
-    $stmt->execute(['id' => $id]);
-    
-    return $stmt->fetch();
+    try {
+        $sql = "SELECT s.*, p.program_code, p.program_name, p.degree_type,
+                       d.department_name, d.department_code,
+                       s.current_semester as semester
+                FROM students s
+                LEFT JOIN programs p ON s.current_program_id = p.id
+                LEFT JOIN departments d ON p.department_id = d.id
+                WHERE s.id = :id";
+        $stmt = $db->prepare($sql);
+        $stmt->execute(['id' => $id]);
+        
+        return $stmt->fetch();
+    } catch (PDOException $e) {
+        return false;
+    }
 }
 
 /**
@@ -106,17 +124,21 @@ function addStudent($data) {
                 sex, civil_status, nationality, religion, blood_type,
                 email, phone, date_of_birth, place_of_birth,
                 address_street, address_barangay, address_city, address_province, address_zip,
-                guardian_name, guardian_relationship, guardian_contact, guardian_address,
-                emergency_contact_name, emergency_contact_phone,
-                student_status, admission_date, year_level, semester, section, program
+                permanent_address,
+                guardian_name, guardian_relationship, guardian_contact, guardian_email, guardian_occupation, guardian_address,
+                emergency_contact_name, emergency_contact_phone, emergency_contact_relationship,
+                current_program_id, admission_date, admission_type, year_level, current_semester, section,
+                student_status, scholarship_status, lrn
             ) VALUES (
                 :student_id, :first_name, :middle_name, :last_name, :suffix,
                 :sex, :civil_status, :nationality, :religion, :blood_type,
                 :email, :phone, :date_of_birth, :place_of_birth,
                 :address_street, :address_barangay, :address_city, :address_province, :address_zip,
-                :guardian_name, :guardian_relationship, :guardian_contact, :guardian_address,
-                :emergency_contact_name, :emergency_contact_phone,
-                :student_status, :admission_date, :year_level, :semester, :section, :program
+                :permanent_address,
+                :guardian_name, :guardian_relationship, :guardian_contact, :guardian_email, :guardian_occupation, :guardian_address,
+                :emergency_contact_name, :emergency_contact_phone, :emergency_contact_relationship,
+                :current_program_id, :admission_date, :admission_type, :year_level, :current_semester, :section,
+                :student_status, :scholarship_status, :lrn
             )";
     
     $stmt = $db->prepare($sql);
@@ -131,7 +153,7 @@ function addStudent($data) {
         'civil_status' => $data['civil_status'] ?? 'Single',
         'nationality' => $data['nationality'] ?? 'Filipino',
         'religion' => $data['religion'] ?? null,
-        'blood_type' => $data['blood_type'] ?? 'Unknown',
+        'blood_type' => $data['blood_type'] ?? null,
         'email' => $data['email'],
         'phone' => $data['phone'] ?? null,
         'date_of_birth' => $data['date_of_birth'] ?? null,
@@ -141,18 +163,25 @@ function addStudent($data) {
         'address_city' => $data['address_city'] ?? null,
         'address_province' => $data['address_province'] ?? null,
         'address_zip' => $data['address_zip'] ?? null,
+        'permanent_address' => $data['permanent_address'] ?? null,
         'guardian_name' => $data['guardian_name'] ?? null,
         'guardian_relationship' => $data['guardian_relationship'] ?? null,
         'guardian_contact' => $data['guardian_contact'] ?? null,
+        'guardian_email' => $data['guardian_email'] ?? null,
+        'guardian_occupation' => $data['guardian_occupation'] ?? null,
         'guardian_address' => $data['guardian_address'] ?? null,
         'emergency_contact_name' => $data['emergency_contact_name'] ?? null,
         'emergency_contact_phone' => $data['emergency_contact_phone'] ?? null,
-        'student_status' => $data['student_status'] ?? 'Active',
+        'emergency_contact_relationship' => $data['emergency_contact_relationship'] ?? null,
+        'current_program_id' => $data['current_program_id'] ?? $data['program_id'] ?? null,
         'admission_date' => $data['admission_date'] ?? date('Y-m-d'),
+        'admission_type' => $data['admission_type'] ?? 'Freshman',
         'year_level' => $data['year_level'] ?? '1st Year',
-        'semester' => $data['semester'] ?? '1st Semester',
+        'current_semester' => $data['current_semester'] ?? $data['semester'] ?? '1st Semester',
         'section' => $data['section'] ?? null,
-        'program' => $data['program'] ?? null
+        'student_status' => $data['student_status'] ?? 'Active',
+        'scholarship_status' => $data['scholarship_status'] ?? 'None',
+        'lrn' => $data['lrn'] ?? null
     ]);
     
     return $result ? $db->lastInsertId() : false;
@@ -187,17 +216,24 @@ function updateStudent($id, $data) {
                 address_city = :address_city,
                 address_province = :address_province,
                 address_zip = :address_zip,
+                permanent_address = :permanent_address,
                 guardian_name = :guardian_name,
                 guardian_relationship = :guardian_relationship,
                 guardian_contact = :guardian_contact,
+                guardian_email = :guardian_email,
+                guardian_occupation = :guardian_occupation,
                 guardian_address = :guardian_address,
                 emergency_contact_name = :emergency_contact_name,
                 emergency_contact_phone = :emergency_contact_phone,
-                student_status = :student_status,
+                emergency_contact_relationship = :emergency_contact_relationship,
+                current_program_id = :current_program_id,
+                admission_type = :admission_type,
                 year_level = :year_level,
-                semester = :semester,
+                current_semester = :current_semester,
                 section = :section,
-                program = :program
+                student_status = :student_status,
+                scholarship_status = :scholarship_status,
+                lrn = :lrn
             WHERE id = :id";
     
     $stmt = $db->prepare($sql);
@@ -212,7 +248,7 @@ function updateStudent($id, $data) {
         'civil_status' => $data['civil_status'] ?? 'Single',
         'nationality' => $data['nationality'] ?? 'Filipino',
         'religion' => $data['religion'] ?? null,
-        'blood_type' => $data['blood_type'] ?? 'Unknown',
+        'blood_type' => $data['blood_type'] ?? null,
         'email' => $data['email'],
         'phone' => $data['phone'] ?? null,
         'date_of_birth' => $data['date_of_birth'] ?? null,
@@ -222,17 +258,24 @@ function updateStudent($id, $data) {
         'address_city' => $data['address_city'] ?? null,
         'address_province' => $data['address_province'] ?? null,
         'address_zip' => $data['address_zip'] ?? null,
+        'permanent_address' => $data['permanent_address'] ?? null,
         'guardian_name' => $data['guardian_name'] ?? null,
         'guardian_relationship' => $data['guardian_relationship'] ?? null,
         'guardian_contact' => $data['guardian_contact'] ?? null,
+        'guardian_email' => $data['guardian_email'] ?? null,
+        'guardian_occupation' => $data['guardian_occupation'] ?? null,
         'guardian_address' => $data['guardian_address'] ?? null,
         'emergency_contact_name' => $data['emergency_contact_name'] ?? null,
         'emergency_contact_phone' => $data['emergency_contact_phone'] ?? null,
-        'student_status' => $data['student_status'] ?? 'Active',
+        'emergency_contact_relationship' => $data['emergency_contact_relationship'] ?? null,
+        'current_program_id' => $data['current_program_id'] ?? $data['program_id'] ?? null,
+        'admission_type' => $data['admission_type'] ?? 'Freshman',
         'year_level' => $data['year_level'] ?? '1st Year',
-        'semester' => $data['semester'] ?? '1st Semester',
+        'current_semester' => $data['current_semester'] ?? $data['semester'] ?? '1st Semester',
         'section' => $data['section'] ?? null,
-        'program' => $data['program'] ?? null
+        'student_status' => $data['student_status'] ?? 'Active',
+        'scholarship_status' => $data['scholarship_status'] ?? 'None',
+        'lrn' => $data['lrn'] ?? null
     ]);
 }
 
@@ -567,25 +610,29 @@ function getStudentEnrollments($studentId, $academicYear = null, $semester = nul
     global $db;
     
     try {
-        $sql = "SELECT e.*, s.subject_code, s.subject_name, s.description as subject_description, 
-                       s.units, s.lecture_hours, s.lab_hours
+        $sql = "SELECT e.*, c.course_code as subject_code, c.course_name as subject_name, 
+                       c.description as subject_description, c.units, c.lecture_hours, c.lab_hours,
+                       ay.academic_year, ay.semester,
+                       i.first_name as instructor_first_name, i.last_name as instructor_last_name
                 FROM enrollments e
-                JOIN subjects s ON e.subject_id = s.id
+                JOIN curriculum c ON e.curriculum_id = c.id
+                JOIN academic_years ay ON e.academic_year_id = ay.id
+                LEFT JOIN instructors i ON e.instructor_id = i.id
                 WHERE e.student_id = :student_id";
         
         $params = ['student_id' => $studentId];
         
         if ($academicYear) {
-            $sql .= " AND e.academic_year = :academic_year";
+            $sql .= " AND ay.academic_year = :academic_year";
             $params['academic_year'] = $academicYear;
         }
         
         if ($semester) {
-            $sql .= " AND e.semester = :semester";
+            $sql .= " AND ay.semester = :semester";
             $params['semester'] = $semester;
         }
         
-        $sql .= " ORDER BY e.academic_year DESC, e.semester, s.subject_code";
+        $sql .= " ORDER BY ay.academic_year DESC, ay.semester, c.course_code";
         
         $stmt = $db->prepare($sql);
         $stmt->execute($params);
@@ -605,11 +652,12 @@ function getCurrentEnrollments($studentId) {
     global $db;
     
     try {
-        // Get the most recent enrollment academic year/semester for this student
-        $sql = "SELECT DISTINCT academic_year, semester 
-                FROM enrollments 
-                WHERE student_id = :student_id 
-                ORDER BY academic_year DESC, FIELD(semester, '1st Semester', '2nd Semester', 'Summer') DESC 
+        // Get the current academic year (is_current = TRUE)
+        $sql = "SELECT ay.academic_year, ay.semester 
+                FROM enrollments e
+                JOIN academic_years ay ON e.academic_year_id = ay.id
+                WHERE e.student_id = :student_id 
+                ORDER BY ay.start_date DESC 
                 LIMIT 1";
         
         $stmt = $db->prepare($sql);
@@ -647,9 +695,9 @@ function getEnrollmentStats($studentId) {
         
         // Total subjects and passed units (only count passed subjects for earned units)
         $sql = "SELECT COUNT(*) as total, 
-                       COALESCE(SUM(CASE WHEN e.grade_status = 'Passed' THEN s.units ELSE 0 END), 0) as units
+                       COALESCE(SUM(CASE WHEN e.grade_status = 'Passed' THEN c.units ELSE 0 END), 0) as units
                 FROM enrollments e
-                JOIN subjects s ON e.subject_id = s.id
+                JOIN curriculum c ON e.curriculum_id = c.id
                 WHERE e.student_id = :student_id";
         $stmt = $db->prepare($sql);
         $stmt->execute(['student_id' => $studentId]);
@@ -675,16 +723,18 @@ function getEnrollmentStats($studentId) {
         $stmt->execute(['student_id' => $studentId]);
         $stats['pending_subjects'] = $stmt->fetch()['count'];
         
-        // Current semester units (most recent academic year/semester)
-        $sql = "SELECT COALESCE(SUM(s.units), 0) as units
+        // Current semester units (most recent academic year)
+        $sql = "SELECT COALESCE(SUM(c.units), 0) as units
                 FROM enrollments e
-                JOIN subjects s ON e.subject_id = s.id
+                JOIN curriculum c ON e.curriculum_id = c.id
+                JOIN academic_years ay ON e.academic_year_id = ay.id
                 WHERE e.student_id = :student_id
-                AND (e.academic_year, e.semester) = (
-                    SELECT academic_year, semester 
-                    FROM enrollments 
-                    WHERE student_id = :student_id2 
-                    ORDER BY academic_year DESC, FIELD(semester, '2nd Semester', '1st Semester', 'Summer') DESC 
+                AND e.academic_year_id = (
+                    SELECT e2.academic_year_id 
+                    FROM enrollments e2
+                    JOIN academic_years ay2 ON e2.academic_year_id = ay2.id
+                    WHERE e2.student_id = :student_id2 
+                    ORDER BY ay2.start_date DESC 
                     LIMIT 1
                 )";
         $stmt = $db->prepare($sql);
@@ -715,15 +765,19 @@ function getAllSubjects($programId = null) {
     global $db;
     
     try {
-        $sql = "SELECT * FROM subjects";
+        $sql = "SELECT c.*, c.course_code as subject_code, c.course_name as subject_name,
+                       p.program_code, p.program_name
+                FROM curriculum c
+                LEFT JOIN programs p ON c.program_id = p.id
+                WHERE c.is_active = TRUE";
         $params = [];
         
         if ($programId) {
-            $sql .= " WHERE program_id = :program_id";
+            $sql .= " AND c.program_id = :program_id";
             $params['program_id'] = $programId;
         }
         
-        $sql .= " ORDER BY year_level, semester, subject_code";
+        $sql .= " ORDER BY c.year_level, c.semester, c.course_code";
         
         $stmt = $db->prepare($sql);
         $stmt->execute($params);
@@ -742,19 +796,19 @@ function getAllSubjects($programId = null) {
  * @param string $semester Semester
  * @return bool Success status
  */
-function enrollStudent($studentId, $subjectId, $academicYear, $semester) {
+function enrollStudent($studentId, $curriculumId, $academicYearId, $instructorId = null) {
     global $db;
     
     try {
-        $sql = "INSERT INTO enrollments (student_id, subject_id, academic_year, semester, enrollment_date, grade_status)
-                VALUES (:student_id, :subject_id, :academic_year, :semester, CURRENT_DATE, 'Pending')";
+        $sql = "INSERT INTO enrollments (student_id, curriculum_id, academic_year_id, instructor_id, enrollment_date, enrollment_status, grade_status)
+                VALUES (:student_id, :curriculum_id, :academic_year_id, :instructor_id, CURRENT_DATE, 'Enrolled', 'Pending')";
         
         $stmt = $db->prepare($sql);
         return $stmt->execute([
             'student_id' => $studentId,
-            'subject_id' => $subjectId,
-            'academic_year' => $academicYear,
-            'semester' => $semester
+            'curriculum_id' => $curriculumId,
+            'academic_year_id' => $academicYearId,
+            'instructor_id' => $instructorId
         ]);
     } catch (PDOException $e) {
         return false;
@@ -802,24 +856,26 @@ function getStudentPayments($studentId, $academicYear = null, $semester = null) 
     global $db;
     
     try {
-        $sql = "SELECT p.*, pt.type_name as payment_type_name
+        $sql = "SELECT p.*, pt.type_name as payment_type_name, pt.type_code,
+                       ay.academic_year, ay.semester
                 FROM payments p
                 LEFT JOIN payment_types pt ON p.payment_type_id = pt.id
+                LEFT JOIN academic_years ay ON p.academic_year_id = ay.id
                 WHERE p.student_id = :student_id";
         
         $params = ['student_id' => $studentId];
         
         if ($academicYear) {
-            $sql .= " AND p.academic_year = :academic_year";
+            $sql .= " AND ay.academic_year = :academic_year";
             $params['academic_year'] = $academicYear;
         }
         
         if ($semester) {
-            $sql .= " AND p.semester = :semester";
+            $sql .= " AND ay.semester = :semester";
             $params['semester'] = $semester;
         }
         
-        $sql .= " ORDER BY p.academic_year DESC, p.created_at DESC";
+        $sql .= " ORDER BY ay.start_date DESC, p.created_at DESC";
         
         $stmt = $db->prepare($sql);
         $stmt->execute($params);
@@ -839,11 +895,12 @@ function getCurrentPayments($studentId) {
     global $db;
     
     try {
-        // Get the most recent payment academic year/semester for this student
-        $sql = "SELECT DISTINCT academic_year, semester 
-                FROM payments 
-                WHERE student_id = :student_id 
-                ORDER BY academic_year DESC, FIELD(semester, '1st Semester', '2nd Semester', 'Summer') DESC 
+        // Get the most recent payment academic year for this student
+        $sql = "SELECT ay.academic_year, ay.semester 
+                FROM payments p
+                JOIN academic_years ay ON p.academic_year_id = ay.id
+                WHERE p.student_id = :student_id 
+                ORDER BY ay.start_date DESC 
                 LIMIT 1";
         
         $stmt = $db->prepare($sql);
@@ -873,26 +930,27 @@ function getPaymentSummary($studentId, $academicYear = null, $semester = null) {
     
     try {
         $sql = "SELECT 
-                    COALESCE(SUM(amount_due), 0) as total_due,
-                    COALESCE(SUM(amount_paid), 0) as total_paid,
-                    COALESCE(SUM(amount_due) - SUM(amount_paid), 0) as balance,
+                    COALESCE(SUM(p.amount_due), 0) as total_due,
+                    COALESCE(SUM(p.amount_paid), 0) as total_paid,
+                    COALESCE(SUM(p.amount_due) - SUM(p.amount_paid), 0) as balance,
                     COUNT(*) as payment_count,
-                    SUM(CASE WHEN payment_status = 'Paid' THEN 1 ELSE 0 END) as paid_count,
-                    SUM(CASE WHEN payment_status = 'Partial' THEN 1 ELSE 0 END) as partial_count,
-                    SUM(CASE WHEN payment_status = 'Unpaid' THEN 1 ELSE 0 END) as unpaid_count,
-                    SUM(CASE WHEN payment_status = 'Overdue' THEN 1 ELSE 0 END) as overdue_count
-                FROM payments 
-                WHERE student_id = :student_id";
+                    SUM(CASE WHEN p.payment_status = 'Paid' THEN 1 ELSE 0 END) as paid_count,
+                    SUM(CASE WHEN p.payment_status = 'Partial' THEN 1 ELSE 0 END) as partial_count,
+                    SUM(CASE WHEN p.payment_status = 'Unpaid' THEN 1 ELSE 0 END) as unpaid_count,
+                    SUM(CASE WHEN p.payment_status = 'Overdue' THEN 1 ELSE 0 END) as overdue_count
+                FROM payments p
+                LEFT JOIN academic_years ay ON p.academic_year_id = ay.id
+                WHERE p.student_id = :student_id";
         
         $params = ['student_id' => $studentId];
         
         if ($academicYear) {
-            $sql .= " AND academic_year = :academic_year";
+            $sql .= " AND ay.academic_year = :academic_year";
             $params['academic_year'] = $academicYear;
         }
         
         if ($semester) {
-            $sql .= " AND semester = :semester";
+            $sql .= " AND ay.semester = :semester";
             $params['semester'] = $semester;
         }
         
@@ -952,21 +1010,20 @@ function addPayment($data) {
     
     try {
         $sql = "INSERT INTO payments (
-                    student_id, payment_type_id, academic_year, semester,
+                    student_id, payment_type_id, academic_year_id,
                     description, amount_due, amount_paid, payment_date,
-                    payment_method, reference_number, payment_status, due_date, remarks
+                    payment_method, reference_number, payment_status, due_date, remarks, processed_by
                 ) VALUES (
-                    :student_id, :payment_type_id, :academic_year, :semester,
+                    :student_id, :payment_type_id, :academic_year_id,
                     :description, :amount_due, :amount_paid, :payment_date,
-                    :payment_method, :reference_number, :payment_status, :due_date, :remarks
+                    :payment_method, :reference_number, :payment_status, :due_date, :remarks, :processed_by
                 )";
         
         $stmt = $db->prepare($sql);
         $result = $stmt->execute([
             'student_id' => $data['student_id'],
             'payment_type_id' => $data['payment_type_id'] ?? null,
-            'academic_year' => $data['academic_year'],
-            'semester' => $data['semester'],
+            'academic_year_id' => $data['academic_year_id'],
             'description' => $data['description'] ?? null,
             'amount_due' => $data['amount_due'],
             'amount_paid' => $data['amount_paid'] ?? 0,
@@ -975,7 +1032,8 @@ function addPayment($data) {
             'reference_number' => $data['reference_number'] ?? null,
             'payment_status' => $data['payment_status'] ?? 'Unpaid',
             'due_date' => $data['due_date'] ?? null,
-            'remarks' => $data['remarks'] ?? null
+            'remarks' => $data['remarks'] ?? null,
+            'processed_by' => $data['processed_by'] ?? null
         ]);
         
         return $result ? $db->lastInsertId() : false;
@@ -1049,5 +1107,540 @@ function getGradeDescription($grade) {
     if ($grade > 3.00) return 'Failed';
     
     return 'Unknown';
+}
+
+// ============================================
+// SCHEDULE FUNCTIONS
+// Manage student class schedules
+// ============================================
+
+/**
+ * Get all schedules for a student's current semester
+ * 
+ * @param int $studentId Student ID
+ * @param string|null $academicYear Filter by academic year (optional)
+ * @param string|null $semester Filter by semester (optional)
+ * @return array List of schedules with subject details
+ */
+function getStudentSchedules($studentId, $academicYear = null, $semester = null) {
+    global $db;
+    
+    try {
+        // First, get the most recent enrollment semester if not specified
+        if (!$academicYear || !$semester) {
+            $sql = "SELECT ay.academic_year, ay.semester 
+                    FROM enrollments e
+                    JOIN academic_years ay ON e.academic_year_id = ay.id
+                    WHERE e.student_id = :student_id 
+                    ORDER BY ay.start_date DESC 
+                    LIMIT 1";
+            
+            $stmt = $db->prepare($sql);
+            $stmt->execute(['student_id' => $studentId]);
+            $current = $stmt->fetch();
+            
+            if ($current) {
+                $academicYear = $academicYear ?? $current['academic_year'];
+                $semester = $semester ?? $current['semester'];
+            }
+        }
+        
+        $sql = "SELECT cs.*, 
+                       c.course_code as subject_code, c.course_name as subject_name, c.units, c.lecture_hours, c.lab_hours,
+                       ay.academic_year, ay.semester,
+                       i.first_name as instructor_first_name, i.last_name as instructor_last_name, i.title as instructor_title
+                FROM class_schedules cs
+                JOIN enrollments e ON cs.enrollment_id = e.id
+                JOIN curriculum c ON e.curriculum_id = c.id
+                JOIN academic_years ay ON e.academic_year_id = ay.id
+                LEFT JOIN instructors i ON cs.instructor_id = i.id
+                WHERE e.student_id = :student_id
+                AND cs.is_active = TRUE";
+        
+        $params = ['student_id' => $studentId];
+        
+        if ($academicYear) {
+            $sql .= " AND ay.academic_year = :academic_year";
+            $params['academic_year'] = $academicYear;
+        }
+        
+        if ($semester) {
+            $sql .= " AND ay.semester = :semester";
+            $params['semester'] = $semester;
+        }
+        
+        $sql .= " ORDER BY FIELD(cs.day_of_week, 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'), cs.start_time";
+        
+        $stmt = $db->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll();
+    } catch (PDOException $e) {
+        return [];
+    }
+}
+
+/**
+ * Get schedules grouped by day for timetable view
+ * 
+ * @param int $studentId Student ID
+ * @param string|null $academicYear Filter by academic year (optional)
+ * @param string|null $semester Filter by semester (optional)
+ * @return array Schedules organized by day of week
+ */
+function getStudentSchedulesByDay($studentId, $academicYear = null, $semester = null) {
+    $schedules = getStudentSchedules($studentId, $academicYear, $semester);
+    
+    $days = [
+        'Monday' => [],
+        'Tuesday' => [],
+        'Wednesday' => [],
+        'Thursday' => [],
+        'Friday' => [],
+        'Saturday' => [],
+        'Sunday' => []
+    ];
+    
+    foreach ($schedules as $schedule) {
+        $days[$schedule['day_of_week']][] = $schedule;
+    }
+    
+    return $days;
+}
+
+/**
+ * Get schedule summary/stats for a student
+ * 
+ * @param int $studentId Student ID
+ * @param string|null $academicYear Filter by academic year (optional)
+ * @param string|null $semester Filter by semester (optional)
+ * @return array Schedule statistics
+ */
+function getScheduleStats($studentId, $academicYear = null, $semester = null) {
+    $schedules = getStudentSchedules($studentId, $academicYear, $semester);
+    
+    $stats = [
+        'total_classes' => count($schedules),
+        'total_hours' => 0,
+        'lecture_hours' => 0,
+        'lab_hours' => 0,
+        'days_with_classes' => 0,
+        'earliest_class' => null,
+        'latest_class' => null,
+        'subjects_count' => 0,
+        'days_breakdown' => []
+    ];
+    
+    $daysSet = [];
+    $subjectsSet = [];
+    
+    foreach ($schedules as $schedule) {
+        // Calculate hours
+        $start = strtotime($schedule['start_time']);
+        $end = strtotime($schedule['end_time']);
+        $hours = ($end - $start) / 3600;
+        $stats['total_hours'] += $hours;
+        
+        if ($schedule['class_type'] === 'Laboratory') {
+            $stats['lab_hours'] += $hours;
+        } else {
+            $stats['lecture_hours'] += $hours;
+        }
+        
+        // Track unique days
+        $daysSet[$schedule['day_of_week']] = true;
+        
+        // Track unique subjects
+        $subjectsSet[$schedule['subject_code']] = true;
+        
+        // Track earliest and latest
+        if ($stats['earliest_class'] === null || $schedule['start_time'] < $stats['earliest_class']) {
+            $stats['earliest_class'] = $schedule['start_time'];
+        }
+        if ($stats['latest_class'] === null || $schedule['end_time'] > $stats['latest_class']) {
+            $stats['latest_class'] = $schedule['end_time'];
+        }
+        
+        // Days breakdown
+        if (!isset($stats['days_breakdown'][$schedule['day_of_week']])) {
+            $stats['days_breakdown'][$schedule['day_of_week']] = 0;
+        }
+        $stats['days_breakdown'][$schedule['day_of_week']]++;
+    }
+    
+    $stats['days_with_classes'] = count($daysSet);
+    $stats['subjects_count'] = count($subjectsSet);
+    
+    return $stats;
+}
+
+/**
+ * Format time for display (12-hour format)
+ * 
+ * @param string $time Time in 24-hour format (HH:MM:SS)
+ * @return string Formatted time (e.g., "8:00 AM")
+ */
+function formatScheduleTime($time) {
+    return date('g:i A', strtotime($time));
+}
+
+/**
+ * Get class type icon
+ * 
+ * @param string $classType Type of class
+ * @return string Font Awesome icon class
+ */
+function getClassTypeIcon($classType) {
+    $icons = [
+        'Lecture' => 'fas fa-chalkboard-teacher',
+        'Laboratory' => 'fas fa-flask',
+        'Tutorial' => 'fas fa-users',
+        'Seminar' => 'fas fa-comments',
+        'Online' => 'fas fa-laptop',
+        'Hybrid' => 'fas fa-random'
+    ];
+    
+    return $icons[$classType] ?? 'fas fa-book';
+}
+
+/**
+ * Get class type color class
+ * 
+ * @param string $classType Type of class
+ * @return string CSS color class
+ */
+function getClassTypeColor($classType) {
+    $colors = [
+        'Lecture' => 'schedule-lecture',
+        'Laboratory' => 'schedule-lab',
+        'Tutorial' => 'schedule-tutorial',
+        'Seminar' => 'schedule-seminar',
+        'Online' => 'schedule-online',
+        'Hybrid' => 'schedule-hybrid'
+    ];
+    
+    return $colors[$classType] ?? 'schedule-lecture';
+}
+
+/**
+ * Check for schedule conflicts
+ * 
+ * @param int $studentId Student ID
+ * @param string $day Day of week
+ * @param string $startTime Start time
+ * @param string $endTime End time
+ * @param int|null $excludeId Exclude this schedule ID (for updates)
+ * @return array|false Conflicting schedule or false
+ */
+function checkScheduleConflict($studentId, $day, $startTime, $endTime, $excludeId = null) {
+    global $db;
+    
+    try {
+        $sql = "SELECT cs.*, c.course_code as subject_code, c.course_name as subject_name
+                FROM class_schedules cs
+                JOIN enrollments e ON cs.enrollment_id = e.id
+                JOIN curriculum c ON e.curriculum_id = c.id
+                WHERE e.student_id = :student_id
+                AND cs.day_of_week = :day
+                AND cs.is_active = TRUE
+                AND (
+                    (cs.start_time < :end_time AND cs.end_time > :start_time)
+                )";
+        
+        $params = [
+            'student_id' => $studentId,
+            'day' => $day,
+            'start_time' => $startTime,
+            'end_time' => $endTime
+        ];
+        
+        if ($excludeId) {
+            $sql .= " AND cs.id != :exclude_id";
+            $params['exclude_id'] = $excludeId;
+        }
+        
+        $stmt = $db->prepare($sql);
+        $stmt->execute($params);
+        $conflict = $stmt->fetch();
+        
+        return $conflict ?: false;
+    } catch (PDOException $e) {
+        return false;
+    }
+}
+
+/**
+ * Get today's schedule for a student
+ * 
+ * @param int $studentId Student ID
+ * @return array Today's classes
+ */
+function getTodaySchedule($studentId) {
+    $today = date('l'); // Gets current day name (Monday, Tuesday, etc.)
+    $schedulesByDay = getStudentSchedulesByDay($studentId);
+    
+    return $schedulesByDay[$today] ?? [];
+}
+
+/**
+ * Get next upcoming class for a student
+ * 
+ * @param int $studentId Student ID
+ * @return array|null Next class or null if none
+ */
+function getNextClass($studentId) {
+    $today = date('l');
+    $currentTime = date('H:i:s');
+    $schedulesByDay = getStudentSchedulesByDay($studentId);
+    
+    // Order of days starting from today
+    $daysOrder = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    $todayIndex = array_search($today, $daysOrder);
+    
+    // Reorder days starting from today
+    $orderedDays = array_merge(
+        array_slice($daysOrder, $todayIndex),
+        array_slice($daysOrder, 0, $todayIndex)
+    );
+    
+    foreach ($orderedDays as $index => $day) {
+        if (isset($schedulesByDay[$day]) && !empty($schedulesByDay[$day])) {
+            foreach ($schedulesByDay[$day] as $class) {
+                // If today, check if class is still upcoming
+                if ($index === 0 && $class['start_time'] <= $currentTime) {
+                    continue;
+                }
+                return array_merge($class, ['day' => $day, 'is_today' => $index === 0]);
+            }
+        }
+    }
+    
+    return null;
+}
+
+// ============================================
+// ADDITIONAL HELPER FUNCTIONS
+// For new schema support
+// ============================================
+
+/**
+ * Get all academic years
+ * 
+ * @param bool $activeOnly Get only active/upcoming years
+ * @return array List of academic years
+ */
+function getAllAcademicYears($activeOnly = false) {
+    global $db;
+    
+    try {
+        $sql = "SELECT * FROM academic_years";
+        if ($activeOnly) {
+            $sql .= " WHERE status IN ('Ongoing', 'Upcoming')";
+        }
+        $sql .= " ORDER BY start_date DESC";
+        
+        $stmt = $db->query($sql);
+        return $stmt->fetchAll();
+    } catch (PDOException $e) {
+        return [];
+    }
+}
+
+/**
+ * Get current academic year
+ * 
+ * @return array|false Current academic year or false
+ */
+function getCurrentAcademicYear() {
+    global $db;
+    
+    try {
+        $sql = "SELECT * FROM academic_years WHERE is_current = TRUE LIMIT 1";
+        $stmt = $db->query($sql);
+        return $stmt->fetch();
+    } catch (PDOException $e) {
+        return false;
+    }
+}
+
+/**
+ * Get all departments
+ * 
+ * @param bool $activeOnly Get only active departments
+ * @return array List of departments
+ */
+function getAllDepartments($activeOnly = true) {
+    global $db;
+    
+    try {
+        $sql = "SELECT * FROM departments";
+        if ($activeOnly) {
+            $sql .= " WHERE is_active = TRUE";
+        }
+        $sql .= " ORDER BY department_name";
+        
+        $stmt = $db->query($sql);
+        return $stmt->fetchAll();
+    } catch (PDOException $e) {
+        return [];
+    }
+}
+
+/**
+ * Get all instructors
+ * 
+ * @param int|null $departmentId Filter by department
+ * @param bool $activeOnly Get only active instructors
+ * @return array List of instructors
+ */
+function getAllInstructors($departmentId = null, $activeOnly = true) {
+    global $db;
+    
+    try {
+        $sql = "SELECT i.*, d.department_name, d.department_code
+                FROM instructors i
+                LEFT JOIN departments d ON i.department_id = d.id
+                WHERE 1=1";
+        
+        $params = [];
+        
+        if ($activeOnly) {
+            $sql .= " AND i.is_active = TRUE";
+        }
+        
+        if ($departmentId) {
+            $sql .= " AND i.department_id = :department_id";
+            $params['department_id'] = $departmentId;
+        }
+        
+        $sql .= " ORDER BY i.last_name, i.first_name";
+        
+        $stmt = $db->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll();
+    } catch (PDOException $e) {
+        return [];
+    }
+}
+
+/**
+ * Get instructor by ID
+ * 
+ * @param int $id Instructor ID
+ * @return array|false Instructor data or false
+ */
+function getInstructorById($id) {
+    global $db;
+    
+    try {
+        $sql = "SELECT i.*, d.department_name, d.department_code
+                FROM instructors i
+                LEFT JOIN departments d ON i.department_id = d.id
+                WHERE i.id = :id";
+        $stmt = $db->prepare($sql);
+        $stmt->execute(['id' => $id]);
+        return $stmt->fetch();
+    } catch (PDOException $e) {
+        return false;
+    }
+}
+
+/**
+ * Get student with program details
+ * 
+ * @param int $id Student ID
+ * @return array|false Student data with program info
+ */
+function getStudentWithProgram($id) {
+    global $db;
+    
+    try {
+        $sql = "SELECT s.*, p.program_code, p.program_name, p.degree_type,
+                       d.department_name, d.department_code
+                FROM students s
+                LEFT JOIN programs p ON s.current_program_id = p.id
+                LEFT JOIN departments d ON p.department_id = d.id
+                WHERE s.id = :id";
+        $stmt = $db->prepare($sql);
+        $stmt->execute(['id' => $id]);
+        return $stmt->fetch();
+    } catch (PDOException $e) {
+        return false;
+    }
+}
+
+/**
+ * Get curriculum (courses) for a program
+ * 
+ * @param int $programId Program ID
+ * @param string|null $yearLevel Filter by year level
+ * @param string|null $semester Filter by semester
+ * @return array List of curriculum/courses
+ */
+function getCurriculumByProgram($programId, $yearLevel = null, $semester = null) {
+    global $db;
+    
+    try {
+        $sql = "SELECT * FROM curriculum WHERE program_id = :program_id AND is_active = TRUE";
+        $params = ['program_id' => $programId];
+        
+        if ($yearLevel) {
+            $sql .= " AND year_level = :year_level";
+            $params['year_level'] = $yearLevel;
+        }
+        
+        if ($semester) {
+            $sql .= " AND semester = :semester";
+            $params['semester'] = $semester;
+        }
+        
+        $sql .= " ORDER BY year_level, semester, course_code";
+        
+        $stmt = $db->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll();
+    } catch (PDOException $e) {
+        return [];
+    }
+}
+
+/**
+ * Get academic year by ID
+ * 
+ * @param int $id Academic year ID
+ * @return array|false Academic year data or false
+ */
+function getAcademicYearById($id) {
+    global $db;
+    
+    try {
+        $sql = "SELECT * FROM academic_years WHERE id = :id";
+        $stmt = $db->prepare($sql);
+        $stmt->execute(['id' => $id]);
+        return $stmt->fetch();
+    } catch (PDOException $e) {
+        return false;
+    }
+}
+
+/**
+ * Get program by ID
+ * 
+ * @param int $id Program ID
+ * @return array|false Program data or false
+ */
+function getProgramById($id) {
+    global $db;
+    
+    try {
+        $sql = "SELECT p.*, d.department_name, d.department_code
+                FROM programs p
+                LEFT JOIN departments d ON p.department_id = d.id
+                WHERE p.id = :id";
+        $stmt = $db->prepare($sql);
+        $stmt->execute(['id' => $id]);
+        return $stmt->fetch();
+    } catch (PDOException $e) {
+        return false;
+    }
 }
 ?>

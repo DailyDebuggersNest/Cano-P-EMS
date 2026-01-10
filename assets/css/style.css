@@ -984,6 +984,31 @@ tr:hover td {
     color: #991b1b;
 }
 
+.badge-primary {
+    background-color: #0369a1;
+    color: #ffffff;
+}
+
+.badge-purple {
+    background-color: #ede9fe;
+    color: #6d28d9;
+}
+
+.badge-pink {
+    background-color: #fce7f3;
+    color: #be185d;
+}
+
+.badge-orange {
+    background-color: #fed7aa;
+    color: #c2410c;
+}
+
+.badge-success {
+    background-color: #d1fae5;
+    color: #065f46;
+}
+
 /* ============================================
    11. FORMS
    ============================================ */
@@ -2811,6 +2836,796 @@ th.sortable a:hover {
 .semester-block.collapsed .semester-subjects {
     max-height: 0;
 }
+
+/* ============================================
+   SCHEDULE TAB STYLES
+   ============================================ */
+
+.schedule-tab-content {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+/* Schedule Overview Cards */
+.schedule-overview-cards {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 1rem;
+}
+
+.schedule-stat-card {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.25rem;
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border-color);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.schedule-stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow);
+}
+
+.schedule-stat-card .stat-icon {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius);
+    font-size: 1.25rem;
+    color: white;
+    flex-shrink: 0;
+}
+
+.schedule-stat-card .stat-content {
+    display: flex;
+    flex-direction: column;
+}
+
+.schedule-stat-card .stat-number {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1;
+}
+
+.schedule-stat-card .stat-text {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-top: 0.25rem;
+}
+
+/* View Toggle */
+.schedule-view-toggle {
+    display: flex;
+    gap: 0.5rem;
+    background: var(--card-bg);
+    padding: 0.5rem;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-sm);
+    width: fit-content;
+}
+
+.view-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.625rem 1rem;
+    border: none;
+    background: transparent;
+    border-radius: var(--radius-sm);
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.view-btn:hover {
+    background: var(--primary-light);
+    color: var(--primary-color);
+}
+
+.view-btn.active {
+    background: var(--primary-color);
+    color: white;
+}
+
+.view-btn i {
+    font-size: 0.875rem;
+}
+
+/* Timetable Panel */
+.timetable-panel .panel-body {
+    padding: 0;
+    overflow-x: auto;
+}
+
+.timetable-body {
+    padding: 0 !important;
+}
+
+.timetable-container {
+    min-width: 900px;
+    overflow-x: auto;
+}
+
+/* Timetable Styles */
+.timetable {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+}
+
+.timetable th,
+.timetable td {
+    border: 1px solid var(--border-color);
+    padding: 0;
+}
+
+.timetable thead th {
+    background: linear-gradient(to bottom, #f8fafc, #f1f5f9);
+    padding: 1rem 0.5rem;
+    text-align: center;
+    font-weight: 600;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.time-header {
+    width: 80px;
+    background: #f1f5f9 !important;
+}
+
+.day-header {
+    min-width: 120px;
+}
+
+.day-header.has-classes {
+    background: linear-gradient(to bottom, var(--primary-light), rgba(0, 120, 212, 0.05)) !important;
+}
+
+.day-header.today {
+    background: linear-gradient(to bottom, #dcfce7, #d1fae5) !important;
+    color: #166534;
+}
+
+.day-short {
+    display: none;
+}
+
+.day-full {
+    display: block;
+}
+
+.today-indicator {
+    display: inline-block;
+    background: var(--success-color);
+    color: white;
+    font-size: 0.6rem;
+    padding: 0.15rem 0.4rem;
+    border-radius: 10px;
+    margin-left: 0.25rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Time Rows */
+.time-row {
+    height: 48px;
+}
+
+.time-cell {
+    background: #f8fafc;
+    text-align: center;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    padding: 0.5rem !important;
+    vertical-align: middle;
+}
+
+.schedule-cell {
+    position: relative;
+    vertical-align: top;
+    background: #fff;
+    height: 48px;
+}
+
+.schedule-cell:hover {
+    background: #fafafa;
+}
+
+/* Class Block */
+.class-block {
+    position: absolute;
+    left: 4px;
+    right: 4px;
+    top: 2px;
+    border-radius: 6px;
+    padding: 0.4rem 0.5rem;
+    overflow: hidden;
+    z-index: 5;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    min-height: 44px;
+}
+
+.class-block:hover {
+    transform: scale(1.02);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 10;
+    overflow: visible;
+}
+
+.class-block:hover .class-block-content {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: inherit;
+    padding: 0.5rem;
+    border-radius: 6px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    min-height: 100%;
+}
+
+.class-block-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    height: 100%;
+    overflow: hidden;
+}
+
+.class-block .class-code {
+    font-weight: 700;
+    font-size: 0.72rem;
+    letter-spacing: 0.3px;
+    flex-shrink: 0;
+    line-height: 1.1;
+}
+
+.class-block .class-name {
+    font-size: 0.62rem;
+    font-weight: 500;
+    line-height: 1.15;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    flex-shrink: 1;
+    opacity: 0.95;
+}
+
+.class-block .class-time {
+    font-size: 0.58rem;
+    opacity: 0.85;
+    margin-top: auto;
+    flex-shrink: 0;
+    line-height: 1.2;
+}
+
+.class-block .class-details {
+    font-size: 0.55rem;
+    opacity: 0.8;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    flex-shrink: 0;
+    line-height: 1.2;
+}
+
+.class-block .class-details i {
+    font-size: 0.5rem;
+}
+
+.class-block .class-instructor {
+    font-size: 0.52rem;
+    opacity: 0.9;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    flex-shrink: 0;
+    line-height: 1.2;
+    font-weight: 500;
+    margin-top: 1px;
+}
+
+.class-block .class-instructor i {
+    font-size: 0.5rem;
+}
+
+/* Short class blocks (1 hour = ~44px) - show condensed info */
+.class-block[style*="height: 44px"],
+.class-block[style*="height: 43px"],
+.class-block[style*="height: 42px"],
+.class-block[style*="height: 41px"],
+.class-block[style*="height: 40px"] {
+    padding: 0.2rem 0.35rem;
+}
+
+.class-block[style*="height: 44px"] .class-name,
+.class-block[style*="height: 43px"] .class-name,
+.class-block[style*="height: 42px"] .class-name,
+.class-block[style*="height: 41px"] .class-name,
+.class-block[style*="height: 40px"] .class-name {
+    -webkit-line-clamp: 1;
+    font-size: 0.55rem;
+    white-space: nowrap;
+}
+
+.class-block[style*="height: 44px"] .class-time,
+.class-block[style*="height: 43px"] .class-time,
+.class-block[style*="height: 42px"] .class-time,
+.class-block[style*="height: 41px"] .class-time,
+.class-block[style*="height: 40px"] .class-time {
+    font-size: 0.5rem;
+}
+
+.class-block[style*="height: 44px"] .class-details,
+.class-block[style*="height: 43px"] .class-details,
+.class-block[style*="height: 42px"] .class-details,
+.class-block[style*="height: 41px"] .class-details,
+.class-block[style*="height: 40px"] .class-details {
+    display: none;
+}
+
+.class-block[style*="height: 44px"] .class-instructor,
+.class-block[style*="height: 43px"] .class-instructor,
+.class-block[style*="height: 42px"] .class-instructor,
+.class-block[style*="height: 41px"] .class-instructor,
+.class-block[style*="height: 40px"] .class-instructor {
+    display: none;
+}
+
+/* Short class blocks - expand on hover */
+.class-block[style*="height: 44px"]:hover,
+.class-block[style*="height: 43px"]:hover,
+.class-block[style*="height: 42px"]:hover,
+.class-block[style*="height: 41px"]:hover,
+.class-block[style*="height: 40px"]:hover {
+    height: auto !important;
+    min-height: 70px;
+    z-index: 100;
+}
+
+.class-block[style*="height: 44px"]:hover .class-name,
+.class-block[style*="height: 43px"]:hover .class-name,
+.class-block[style*="height: 42px"]:hover .class-name,
+.class-block[style*="height: 41px"]:hover .class-name,
+.class-block[style*="height: 40px"]:hover .class-name {
+    -webkit-line-clamp: unset;
+    white-space: normal;
+}
+
+.class-block[style*="height: 44px"]:hover .class-details,
+.class-block[style*="height: 43px"]:hover .class-details,
+.class-block[style*="height: 42px"]:hover .class-details,
+.class-block[style*="height: 41px"]:hover .class-details,
+.class-block[style*="height: 40px"]:hover .class-details {
+    display: flex;
+}
+
+.class-block[style*="height: 44px"]:hover .class-instructor,
+.class-block[style*="height: 43px"]:hover .class-instructor,
+.class-block[style*="height: 42px"]:hover .class-instructor,
+.class-block[style*="height: 41px"]:hover .class-instructor,
+.class-block[style*="height: 40px"]:hover .class-instructor {
+    display: flex;
+}
+
+/* Short block class-based styling (more reliable) */
+.class-block.short-block {
+    padding: 0.2rem 0.35rem;
+}
+
+.class-block.short-block .class-name {
+    -webkit-line-clamp: 1;
+    font-size: 0.55rem;
+    white-space: nowrap;
+}
+
+.class-block.short-block .class-time {
+    font-size: 0.5rem;
+}
+
+.class-block.short-block .class-details {
+    display: none;
+}
+
+.class-block.short-block .class-instructor {
+    display: none;
+}
+
+.class-block.short-block:hover {
+    height: auto !important;
+    min-height: 75px;
+    z-index: 100;
+    padding: 0.4rem;
+}
+
+.class-block.short-block:hover .class-name {
+    -webkit-line-clamp: unset;
+    white-space: normal;
+    font-size: 0.62rem;
+}
+
+.class-block.short-block:hover .class-details {
+    display: flex;
+}
+
+.class-block.short-block:hover .class-instructor {
+    display: flex;
+}
+
+/* Class Type Colors */
+.schedule-lecture {
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    color: white;
+    border-left: 4px solid #1d4ed8;
+}
+
+.schedule-lab {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: white;
+    border-left: 4px solid #b45309;
+}
+
+.schedule-tutorial {
+    background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+    color: white;
+    border-left: 4px solid #6d28d9;
+}
+
+.schedule-seminar {
+    background: linear-gradient(135deg, #ec4899, #db2777);
+    color: white;
+    border-left: 4px solid #be185d;
+}
+
+.schedule-online {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+    border-left: 4px solid #047857;
+}
+
+.schedule-hybrid {
+    background: linear-gradient(135deg, #6366f1, #4f46e5);
+    color: white;
+    border-left: 4px solid #4338ca;
+}
+
+/* List View Styles */
+.schedule-list-body {
+    padding: 1.25rem !important;
+}
+
+.day-schedule-block {
+    margin-bottom: 1.5rem;
+    background: var(--input-bg);
+    border-radius: var(--radius);
+    overflow: hidden;
+}
+
+.day-schedule-block:last-child {
+    margin-bottom: 0;
+}
+
+.day-schedule-block.today {
+    border: 2px solid var(--success-color);
+}
+
+.day-header-block {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.25rem;
+    background: linear-gradient(to right, var(--primary-light), transparent);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.day-schedule-block.today .day-header-block {
+    background: linear-gradient(to right, rgba(16, 185, 129, 0.15), transparent);
+}
+
+.day-header-block h4 {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.day-header-block h4 i {
+    color: var(--primary-color);
+}
+
+.day-schedule-block.today .day-header-block h4 i {
+    color: var(--success-color);
+}
+
+.today-badge {
+    font-size: 0.65rem;
+    font-weight: 700;
+    background: var(--success-color);
+    color: white;
+    padding: 0.2rem 0.5rem;
+    border-radius: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.class-count {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.day-classes {
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+/* Class Card */
+.class-card {
+    display: flex;
+    align-items: stretch;
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    border: 1px solid var(--border-color);
+    overflow: hidden;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.class-card:hover {
+    transform: translateX(4px);
+    box-shadow: var(--shadow);
+}
+
+.class-time-block {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    background: var(--input-bg);
+    min-width: 90px;
+    border-right: 1px solid var(--border-color);
+}
+
+.class-card.schedule-lecture .class-time-block { 
+    background: linear-gradient(to bottom, rgba(59, 130, 246, 0.1), rgba(37, 99, 235, 0.15)); 
+    border-right-color: rgba(59, 130, 246, 0.3);
+}
+.class-card.schedule-lab .class-time-block { 
+    background: linear-gradient(to bottom, rgba(245, 158, 11, 0.1), rgba(217, 119, 6, 0.15)); 
+    border-right-color: rgba(245, 158, 11, 0.3);
+}
+.class-card.schedule-tutorial .class-time-block { 
+    background: linear-gradient(to bottom, rgba(139, 92, 246, 0.1), rgba(124, 58, 237, 0.15)); 
+    border-right-color: rgba(139, 92, 246, 0.3);
+}
+.class-card.schedule-online .class-time-block { 
+    background: linear-gradient(to bottom, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.15)); 
+    border-right-color: rgba(16, 185, 129, 0.3);
+}
+.class-card.schedule-hybrid .class-time-block { 
+    background: linear-gradient(to bottom, rgba(99, 102, 241, 0.1), rgba(79, 70, 229, 0.15)); 
+    border-right-color: rgba(99, 102, 241, 0.3);
+}
+
+.start-time {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.time-separator {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    margin: 2px 0;
+}
+
+.end-time {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+.class-info-block {
+    flex: 1;
+    padding: 1rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.class-main-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.class-main-info .subject-code-badge {
+    font-size: 0.75rem;
+}
+
+.class-main-info .subject-name {
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 0.95rem;
+}
+
+.class-meta-info {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.meta-item {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.meta-item i {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.class-units {
+    display: flex;
+    align-items: center;
+    padding: 1rem;
+}
+
+.class-units .units-badge {
+    font-size: 0.7rem;
+    padding: 0.25rem 0.6rem;
+}
+
+/* Schedule Legend */
+.schedule-legend {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 1.25rem;
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-sm);
+}
+
+.legend-title {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    padding: 0.25rem 0.6rem;
+    border-radius: 4px;
+}
+
+.legend-item i {
+    font-size: 0.7rem;
+}
+
+.legend-item.schedule-lecture {
+    background: rgba(59, 130, 246, 0.15);
+    color: #2563eb;
+}
+
+.legend-item.schedule-lab {
+    background: rgba(245, 158, 11, 0.15);
+    color: #d97706;
+}
+
+.legend-item.schedule-tutorial {
+    background: rgba(139, 92, 246, 0.15);
+    color: #7c3aed;
+}
+
+.legend-item.schedule-online {
+    background: rgba(16, 185, 129, 0.15);
+    color: #059669;
+}
+
+.legend-item.schedule-hybrid {
+    background: rgba(99, 102, 241, 0.15);
+    color: #4f46e5;
+}
+
+/* Responsive Schedule Styles */
+@media (max-width: 1200px) {
+    .schedule-overview-cards {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (max-width: 992px) {
+    .schedule-overview-cards {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .day-short {
+        display: block;
+    }
+    
+    .day-full {
+        display: none;
+    }
+    
+    .timetable-container {
+        min-width: 700px;
+    }
+}
+
+@media (max-width: 768px) {
+    .schedule-overview-cards {
+        grid-template-columns: 1fr;
+    }
+    
+    .schedule-view-toggle {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .view-btn {
+        flex: 1;
+        justify-content: center;
+    }
+    
+    .class-card {
+        flex-direction: column;
+    }
+    
+    .class-time-block {
+        flex-direction: row;
+        min-width: auto;
+        gap: 0.5rem;
+        border-right: none;
+        border-bottom: 1px solid var(--border-color);
+    }
+    
+    .time-separator {
+        margin: 0;
+    }
+    
+    .schedule-legend {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
+
+/* ============================================
+   END SCHEDULE TAB STYLES
+   ============================================ */
 
 .subjects-table {
     width: 100%;

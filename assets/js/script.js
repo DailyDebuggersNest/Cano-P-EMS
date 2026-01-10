@@ -358,3 +358,59 @@ function showSelectedPaymentSemester() {
         }
     }
 }
+
+// ============================================
+// SCHEDULE VIEW TOGGLE
+// Switch between timetable and list views
+// ============================================
+
+/**
+ * Switch between schedule views (timetable/list)
+ * @param {string} view - The view to switch to ('timetable' or 'list')
+ */
+function switchScheduleView(view) {
+    // Get view containers
+    const timetableView = document.getElementById('timetable-view');
+    const listView = document.getElementById('list-view');
+    
+    // Get toggle buttons
+    const viewBtns = document.querySelectorAll('.view-btn');
+    
+    if (!timetableView || !listView) return;
+    
+    // Hide all views
+    timetableView.style.display = 'none';
+    listView.style.display = 'none';
+    
+    // Remove active class from all buttons
+    viewBtns.forEach(function(btn) {
+        btn.classList.remove('active');
+    });
+    
+    // Show selected view and activate button
+    if (view === 'timetable') {
+        timetableView.style.display = 'block';
+        document.querySelector('[data-view="timetable"]')?.classList.add('active');
+    } else if (view === 'list') {
+        listView.style.display = 'block';
+        document.querySelector('[data-view="list"]')?.classList.add('active');
+    }
+    
+    // Save preference to localStorage
+    localStorage.setItem('scheduleView', view);
+}
+
+/**
+ * Initialize schedule view from saved preference
+ */
+function initScheduleView() {
+    const savedView = localStorage.getItem('scheduleView');
+    if (savedView && (savedView === 'timetable' || savedView === 'list')) {
+        switchScheduleView(savedView);
+    }
+}
+
+// Initialize schedule view on page load
+document.addEventListener('DOMContentLoaded', function() {
+    initScheduleView();
+});
