@@ -1668,6 +1668,8 @@ th.sortable a:hover {
     padding: 4px 8px;
     border-radius: var(--radius-sm);
     font-weight: 500;
+    white-space: nowrap;
+    display: inline-block;
 }
 
 /* Program abbreviation with tooltip */
