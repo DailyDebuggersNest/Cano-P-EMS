@@ -266,7 +266,9 @@ INSERT INTO payment_types (payment_type_id, type_code, type_name, description, c
 -- USERS
 -- ============================================================
 INSERT INTO users (user_id, username, email, password, full_name, role, department_id, is_active, is_verified) VALUES
-(1, 'admin', 'admin@ems.local', '$2y$10$oamDXJzNBYfrB3hWGeZZeu5gZgWQztufYMEslVARK.sRLmqzKwTWe', 'System Administrator', 'Super Admin', NULL, TRUE, TRUE);
+(1, 'admin', 'admin@ems.local', '$2y$10$oamDXJzNBYfrB3hWGeZZeu5gZgWQztufYMEslVARK.sRLmqzKwTWe', 'System Administrator', 'Super Admin', NULL, TRUE, TRUE),
+(2, 'registrar', 'registrar@ems.local', '$2y$10$oamDXJzNBYfrB3hWGeZZeu5gZgWQztufYMEslVARK.sRLmqzKwTWe', 'Maria Registrar', 'Registrar', NULL, TRUE, TRUE),
+(3, 'cashier', 'cashier@ems.local', '$2y$10$oamDXJzNBYfrB3hWGeZZeu5gZgWQztufYMEslVARK.sRLmqzKwTWe', 'Juan Cashier', 'Cashier', NULL, TRUE, TRUE);
 
 -- ============================================================
 -- STUDENTS (6 students for comprehensive testing)
