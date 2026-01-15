@@ -26,7 +26,7 @@ function getAllStudents() {
         $sql = "SELECT s.*, p.program_code, p.program_name,
                        s.current_semester as semester
                 FROM students s
-                LEFT JOIN programs p ON s.current_program_id = p.id
+                LEFT JOIN programs p ON s.current_program_id = p.program_id
                 ORDER BY s.last_name, s.first_name";
         $stmt = $db->query($sql);
         
@@ -50,9 +50,9 @@ function getStudentById($id) {
                        d.department_name, d.department_code,
                        s.current_semester as semester
                 FROM students s
-                LEFT JOIN programs p ON s.current_program_id = p.id
-                LEFT JOIN departments d ON p.department_id = d.id
-                WHERE s.id = :id";
+                LEFT JOIN programs p ON s.current_program_id = p.program_id
+                LEFT JOIN departments d ON p.department_id = d.department_id
+                WHERE s.student_id = :id";
         $stmt = $db->prepare($sql);
         $stmt->execute(['id' => $id]);
         
@@ -63,48 +63,58 @@ function getStudentById($id) {
 }
 
 /**
- * Get a student by their Student ID (STU-YYYY-XXXXX format)
+ * Get a student by their Student Number (STU-YYYY-XXXXX format)
  * 
- * @param string $studentId The student's unique ID
+ * @param string $studentNumber The student's unique number
  * @return array|false Student data or false if not found
  */
-function getStudentByStudentId($studentId) {
+function getStudentByStudentNumber($studentNumber) {
     global $db;
     
-    $sql = "SELECT * FROM students WHERE student_id = :student_id";
+    $sql = "SELECT * FROM students WHERE student_number = :student_number";
     $stmt = $db->prepare($sql);
-    $stmt->execute(['student_id' => $studentId]);
+    $stmt->execute(['student_number' => $studentNumber]);
     
     return $stmt->fetch();
 }
 
+// Alias for backward compatibility
+function getStudentByStudentId($studentId) {
+    return getStudentByStudentNumber($studentId);
+}
+
 /**
- * Generate a new unique Student ID
+ * Generate a new unique Student Number
  * Format: STU-YYYY-XXXXX
  * 
- * @return string The generated student ID
+ * @return string The generated student number
  */
-function generateStudentId() {
+function generateStudentNumber() {
     global $db;
     
     $year = date('Y');
     $prefix = "STU-{$year}-";
     
     // Get the highest existing number for this year
-    $sql = "SELECT student_id FROM students WHERE student_id LIKE :prefix ORDER BY student_id DESC LIMIT 1";
+    $sql = "SELECT student_number FROM students WHERE student_number LIKE :prefix ORDER BY student_number DESC LIMIT 1";
     $stmt = $db->prepare($sql);
     $stmt->execute(['prefix' => $prefix . '%']);
     $result = $stmt->fetch();
     
     if ($result) {
         // Extract the number and increment
-        $lastNumber = (int) substr($result['student_id'], -5);
+        $lastNumber = (int) substr($result['student_number'], -5);
         $newNumber = $lastNumber + 1;
     } else {
         $newNumber = 1;
     }
     
     return $prefix . str_pad($newNumber, 5, '0', STR_PAD_LEFT);
+}
+
+// Alias for backward compatibility
+function generateStudentId() {
+    return generateStudentNumber();
 }
 
 /**
@@ -116,11 +126,11 @@ function generateStudentId() {
 function addStudent($data) {
     global $db;
     
-    // Generate student ID if not provided
-    $studentId = $data['student_id'] ?? generateStudentId();
+    // Generate student number if not provided
+    $studentNumber = $data['student_number'] ?? $data['student_id'] ?? generateStudentNumber();
     
     $sql = "INSERT INTO students (
-                student_id, first_name, middle_name, last_name, suffix,
+                student_number, first_name, middle_name, last_name, suffix,
                 sex, civil_status, nationality, religion, blood_type,
                 email, phone, date_of_birth, place_of_birth,
                 address_street, address_barangay, address_city, address_province, address_zip,
@@ -130,7 +140,7 @@ function addStudent($data) {
                 current_program_id, admission_date, admission_type, year_level, current_semester, section,
                 student_status, scholarship_status, lrn
             ) VALUES (
-                :student_id, :first_name, :middle_name, :last_name, :suffix,
+                :student_number, :first_name, :middle_name, :last_name, :suffix,
                 :sex, :civil_status, :nationality, :religion, :blood_type,
                 :email, :phone, :date_of_birth, :place_of_birth,
                 :address_street, :address_barangay, :address_city, :address_province, :address_zip,
@@ -144,7 +154,7 @@ function addStudent($data) {
     $stmt = $db->prepare($sql);
     
     $result = $stmt->execute([
-        'student_id' => $studentId,
+        'student_number' => $studentNumber,
         'first_name' => $data['first_name'],
         'middle_name' => $data['middle_name'] ?? null,
         'last_name' => $data['last_name'],
@@ -234,7 +244,7 @@ function updateStudent($id, $data) {
                 student_status = :student_status,
                 scholarship_status = :scholarship_status,
                 lrn = :lrn
-            WHERE id = :id";
+            WHERE student_id = :id";
     
     $stmt = $db->prepare($sql);
     
@@ -288,7 +298,7 @@ function updateStudent($id, $data) {
 function deleteStudent($id) {
     global $db;
     
-    $sql = "DELETE FROM students WHERE id = :id";
+    $sql = "DELETE FROM students WHERE student_id = :id";
     $stmt = $db->prepare($sql);
     
     return $stmt->execute(['id' => $id]);
@@ -389,7 +399,7 @@ function getUserByUsername($username) {
 function getUserById($id) {
     global $db;
     
-    $sql = "SELECT * FROM users WHERE id = :id";
+    $sql = "SELECT * FROM users WHERE user_id = :id";
     $stmt = $db->prepare($sql);
     $stmt->execute(['id' => $id]);
     
@@ -432,7 +442,7 @@ function createUser($data) {
 function updateUserPassword($userId, $newPassword) {
     global $db;
     
-    $sql = "UPDATE users SET password = :password WHERE id = :id";
+    $sql = "UPDATE users SET password = :password WHERE user_id = :id";
     $stmt = $db->prepare($sql);
     
     return $stmt->execute([
@@ -615,9 +625,9 @@ function getStudentEnrollments($studentId, $academicYear = null, $semester = nul
                        ay.academic_year, ay.semester,
                        i.first_name as instructor_first_name, i.last_name as instructor_last_name
                 FROM enrollments e
-                JOIN curriculum c ON e.curriculum_id = c.id
-                JOIN academic_years ay ON e.academic_year_id = ay.id
-                LEFT JOIN instructors i ON e.instructor_id = i.id
+                JOIN curriculum c ON e.curriculum_id = c.curriculum_id
+                JOIN academic_years ay ON e.academic_year_id = ay.academic_year_id
+                LEFT JOIN instructors i ON e.instructor_id = i.instructor_id
                 WHERE e.student_id = :student_id";
         
         $params = ['student_id' => $studentId];
@@ -655,7 +665,7 @@ function getCurrentEnrollments($studentId) {
         // Get the current academic year (is_current = TRUE)
         $sql = "SELECT ay.academic_year, ay.semester 
                 FROM enrollments e
-                JOIN academic_years ay ON e.academic_year_id = ay.id
+                JOIN academic_years ay ON e.academic_year_id = ay.academic_year_id
                 WHERE e.student_id = :student_id 
                 ORDER BY ay.start_date DESC 
                 LIMIT 1";
@@ -697,7 +707,7 @@ function getEnrollmentStats($studentId) {
         $sql = "SELECT COUNT(*) as total, 
                        COALESCE(SUM(CASE WHEN e.grade_status = 'Passed' THEN c.units ELSE 0 END), 0) as units
                 FROM enrollments e
-                JOIN curriculum c ON e.curriculum_id = c.id
+                JOIN curriculum c ON e.curriculum_id = c.curriculum_id
                 WHERE e.student_id = :student_id";
         $stmt = $db->prepare($sql);
         $stmt->execute(['student_id' => $studentId]);
@@ -726,13 +736,13 @@ function getEnrollmentStats($studentId) {
         // Current semester units (most recent academic year)
         $sql = "SELECT COALESCE(SUM(c.units), 0) as units
                 FROM enrollments e
-                JOIN curriculum c ON e.curriculum_id = c.id
-                JOIN academic_years ay ON e.academic_year_id = ay.id
+                JOIN curriculum c ON e.curriculum_id = c.curriculum_id
+                JOIN academic_years ay ON e.academic_year_id = ay.academic_year_id
                 WHERE e.student_id = :student_id
                 AND e.academic_year_id = (
                     SELECT e2.academic_year_id 
                     FROM enrollments e2
-                    JOIN academic_years ay2 ON e2.academic_year_id = ay2.id
+                    JOIN academic_years ay2 ON e2.academic_year_id = ay2.academic_year_id
                     WHERE e2.student_id = :student_id2 
                     ORDER BY ay2.start_date DESC 
                     LIMIT 1
@@ -768,7 +778,7 @@ function getAllSubjects($programId = null) {
         $sql = "SELECT c.*, c.course_code as subject_code, c.course_name as subject_name,
                        p.program_code, p.program_name
                 FROM curriculum c
-                LEFT JOIN programs p ON c.program_id = p.id
+                LEFT JOIN programs p ON c.program_id = p.program_id
                 WHERE c.is_active = TRUE";
         $params = [];
         
@@ -827,7 +837,7 @@ function updateEnrollmentGrade($enrollmentId, $grade, $status) {
     global $db;
     
     try {
-        $sql = "UPDATE enrollments SET grade = :grade, grade_status = :status WHERE id = :id";
+        $sql = "UPDATE enrollments SET grade = :grade, grade_status = :status WHERE enrollment_id = :id";
         $stmt = $db->prepare($sql);
         return $stmt->execute([
             'id' => $enrollmentId,
@@ -859,8 +869,8 @@ function getStudentPayments($studentId, $academicYear = null, $semester = null) 
         $sql = "SELECT p.*, pt.type_name as payment_type_name, pt.type_code,
                        ay.academic_year, ay.semester
                 FROM payments p
-                LEFT JOIN payment_types pt ON p.payment_type_id = pt.id
-                LEFT JOIN academic_years ay ON p.academic_year_id = ay.id
+                LEFT JOIN payment_types pt ON p.payment_type_id = pt.payment_type_id
+                LEFT JOIN academic_years ay ON p.academic_year_id = ay.academic_year_id
                 WHERE p.student_id = :student_id";
         
         $params = ['student_id' => $studentId];
@@ -898,7 +908,7 @@ function getCurrentPayments($studentId) {
         // Get the most recent payment academic year for this student
         $sql = "SELECT ay.academic_year, ay.semester 
                 FROM payments p
-                JOIN academic_years ay ON p.academic_year_id = ay.id
+                JOIN academic_years ay ON p.academic_year_id = ay.academic_year_id
                 WHERE p.student_id = :student_id 
                 ORDER BY ay.start_date DESC 
                 LIMIT 1";
@@ -939,7 +949,7 @@ function getPaymentSummary($studentId, $academicYear = null, $semester = null) {
                     SUM(CASE WHEN p.payment_status = 'Unpaid' THEN 1 ELSE 0 END) as unpaid_count,
                     SUM(CASE WHEN p.payment_status = 'Overdue' THEN 1 ELSE 0 END) as overdue_count
                 FROM payments p
-                LEFT JOIN academic_years ay ON p.academic_year_id = ay.id
+                LEFT JOIN academic_years ay ON p.academic_year_id = ay.academic_year_id
                 WHERE p.student_id = :student_id";
         
         $params = ['student_id' => $studentId];
@@ -1060,7 +1070,7 @@ function updatePayment($paymentId, $data) {
                     reference_number = :reference_number,
                     payment_status = :payment_status,
                     remarks = :remarks
-                WHERE id = :id";
+                WHERE payment_id = :id";
         
         $stmt = $db->prepare($sql);
         return $stmt->execute([
@@ -1130,7 +1140,7 @@ function getStudentSchedules($studentId, $academicYear = null, $semester = null)
         if (!$academicYear || !$semester) {
             $sql = "SELECT ay.academic_year, ay.semester 
                     FROM enrollments e
-                    JOIN academic_years ay ON e.academic_year_id = ay.id
+                    JOIN academic_years ay ON e.academic_year_id = ay.academic_year_id
                     WHERE e.student_id = :student_id 
                     ORDER BY ay.start_date DESC 
                     LIMIT 1";
@@ -1150,10 +1160,10 @@ function getStudentSchedules($studentId, $academicYear = null, $semester = null)
                        ay.academic_year, ay.semester,
                        i.first_name as instructor_first_name, i.last_name as instructor_last_name, i.title as instructor_title
                 FROM class_schedules cs
-                JOIN enrollments e ON cs.enrollment_id = e.id
-                JOIN curriculum c ON e.curriculum_id = c.id
-                JOIN academic_years ay ON e.academic_year_id = ay.id
-                LEFT JOIN instructors i ON cs.instructor_id = i.id
+                JOIN enrollments e ON cs.enrollment_id = e.enrollment_id
+                JOIN curriculum c ON e.curriculum_id = c.curriculum_id
+                JOIN academic_years ay ON e.academic_year_id = ay.academic_year_id
+                LEFT JOIN instructors i ON cs.instructor_id = i.instructor_id
                 WHERE e.student_id = :student_id
                 AND cs.is_active = TRUE";
         
@@ -1337,8 +1347,8 @@ function checkScheduleConflict($studentId, $day, $startTime, $endTime, $excludeI
     try {
         $sql = "SELECT cs.*, c.course_code as subject_code, c.course_name as subject_name
                 FROM class_schedules cs
-                JOIN enrollments e ON cs.enrollment_id = e.id
-                JOIN curriculum c ON e.curriculum_id = c.id
+                JOIN enrollments e ON cs.enrollment_id = e.enrollment_id
+                JOIN curriculum c ON e.curriculum_id = c.curriculum_id
                 WHERE e.student_id = :student_id
                 AND cs.day_of_week = :day
                 AND cs.is_active = TRUE
@@ -1498,7 +1508,7 @@ function getAllInstructors($departmentId = null, $activeOnly = true) {
     try {
         $sql = "SELECT i.*, d.department_name, d.department_code
                 FROM instructors i
-                LEFT JOIN departments d ON i.department_id = d.id
+                LEFT JOIN departments d ON i.department_id = d.department_id
                 WHERE 1=1";
         
         $params = [];
@@ -1534,8 +1544,8 @@ function getInstructorById($id) {
     try {
         $sql = "SELECT i.*, d.department_name, d.department_code
                 FROM instructors i
-                LEFT JOIN departments d ON i.department_id = d.id
-                WHERE i.id = :id";
+                LEFT JOIN departments d ON i.department_id = d.department_id
+                WHERE i.instructor_id = :id";
         $stmt = $db->prepare($sql);
         $stmt->execute(['id' => $id]);
         return $stmt->fetch();
@@ -1557,9 +1567,9 @@ function getStudentWithProgram($id) {
         $sql = "SELECT s.*, p.program_code, p.program_name, p.degree_type,
                        d.department_name, d.department_code
                 FROM students s
-                LEFT JOIN programs p ON s.current_program_id = p.id
-                LEFT JOIN departments d ON p.department_id = d.id
-                WHERE s.id = :id";
+                LEFT JOIN programs p ON s.current_program_id = p.program_id
+                LEFT JOIN departments d ON p.department_id = d.department_id
+                WHERE s.student_id = :id";
         $stmt = $db->prepare($sql);
         $stmt->execute(['id' => $id]);
         return $stmt->fetch();
@@ -1613,7 +1623,7 @@ function getAcademicYearById($id) {
     global $db;
     
     try {
-        $sql = "SELECT * FROM academic_years WHERE id = :id";
+        $sql = "SELECT * FROM academic_years WHERE academic_year_id = :id";
         $stmt = $db->prepare($sql);
         $stmt->execute(['id' => $id]);
         return $stmt->fetch();
@@ -1634,8 +1644,8 @@ function getProgramById($id) {
     try {
         $sql = "SELECT p.*, d.department_name, d.department_code
                 FROM programs p
-                LEFT JOIN departments d ON p.department_id = d.id
-                WHERE p.id = :id";
+                LEFT JOIN departments d ON p.department_id = d.department_id
+                WHERE p.program_id = :id";
         $stmt = $db->prepare($sql);
         $stmt->execute(['id' => $id]);
         return $stmt->fetch();

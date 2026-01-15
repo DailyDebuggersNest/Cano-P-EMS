@@ -36,16 +36,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($user && password_verify($password, $user['password'])) {
                 // Password is correct - create session
                 $_SESSION['user_logged_in'] = true;
-                $_SESSION['user_id'] = $user['id'];
+                $_SESSION['user_id'] = $user['user_id'];
                 $_SESSION['username'] = $user['username'];
                 $_SESSION['user_role'] = $user['role'];
                 $_SESSION['full_name'] = $user['full_name'];
                 $_SESSION['login_time'] = time();
                 
                 // Update last login time
-                $updateSql = "UPDATE users SET last_login = NOW() WHERE id = :id";
+                $updateSql = "UPDATE users SET last_login = NOW() WHERE user_id = :user_id";
                 $updateStmt = $db->prepare($updateSql);
-                $updateStmt->execute(['id' => $user['id']]);
+                $updateStmt->execute(['user_id' => $user['user_id']]);
                 
                 header('Location: pages/students.php');
                 exit;

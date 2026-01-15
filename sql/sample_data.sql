@@ -30,7 +30,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 -- ============================================================
 -- DEPARTMENTS
 -- ============================================================
-INSERT INTO departments (id, department_code, department_name, college, dean_name, contact_email, contact_phone, office_location, is_active) VALUES
+INSERT INTO departments (department_id, department_code, department_name, college, dean_name, contact_email, contact_phone, office_location, is_active) VALUES
 (1, 'CCS', 'College of Computing Studies', 'College of Computing Studies', 'Dr. Juan Dela Cruz', 'ccs@university.edu.ph', '+63 2 8123 4567', 'IT Building, 3rd Floor', TRUE),
 (2, 'COE', 'College of Engineering', 'College of Engineering', 'Dr. Maria Santos', 'coe@university.edu.ph', '+63 2 8123 4568', 'Engineering Building, 2nd Floor', TRUE),
 (3, 'COB', 'College of Business', 'College of Business', 'Dr. Pedro Reyes', 'cob@university.edu.ph', '+63 2 8123 4569', 'Business Building, 1st Floor', TRUE),
@@ -39,7 +39,7 @@ INSERT INTO departments (id, department_code, department_name, college, dean_nam
 -- ============================================================
 -- PROGRAMS
 -- ============================================================
-INSERT INTO programs (id, program_code, program_name, department_id, degree_type, description, total_units, years_duration, is_active, accreditation_status) VALUES
+INSERT INTO programs (program_id, program_code, program_name, department_id, degree_type, description, total_units, years_duration, is_active, accreditation_status) VALUES
 (1, 'BSIT', 'Bachelor of Science in Information Technology', 1, 'Bachelor', 'Information Technology program focused on software development and IT infrastructure', 160, 4, TRUE, 'Level II'),
 (2, 'BSCS', 'Bachelor of Science in Computer Science', 1, 'Bachelor', 'Computer Science program with focus on algorithms and computational theory', 165, 4, TRUE, 'Level III'),
 (3, 'BSIS', 'Bachelor of Science in Information Systems', 1, 'Bachelor', 'Information Systems program bridging IT and business processes', 155, 4, TRUE, 'Level I'),
@@ -50,7 +50,7 @@ INSERT INTO programs (id, program_code, program_name, department_id, degree_type
 -- ============================================================
 -- ACADEMIC YEARS
 -- ============================================================
-INSERT INTO academic_years (id, academic_year, semester, start_date, end_date, enrollment_start, enrollment_end, is_current, status) VALUES
+INSERT INTO academic_years (academic_year_id, academic_year, semester, start_date, end_date, enrollment_start, enrollment_end, is_current, status) VALUES
 -- 2021-2022 (Ryan's 1st year)
 (9, '2021-2022', '1st Semester', '2021-08-09', '2021-12-10', '2021-08-01', '2021-08-08', FALSE, 'Completed'),
 (10, '2021-2022', '2nd Semester', '2022-01-10', '2022-05-13', '2022-01-03', '2022-01-09', FALSE, 'Completed'),
@@ -72,7 +72,7 @@ INSERT INTO academic_years (id, academic_year, semester, start_date, end_date, e
 -- ============================================================
 -- INSTRUCTORS
 -- ============================================================
-INSERT INTO instructors (id, employee_id, first_name, middle_name, last_name, suffix, title, email, phone, office_location, department_id, position, specialization, employment_status, is_active) VALUES
+INSERT INTO instructors (instructor_id, employee_id, first_name, middle_name, last_name, suffix, title, email, phone, office_location, department_id, position, specialization, employment_status, is_active) VALUES
 (1, 'EMP-2020-00001', 'Juan', 'Carlos', 'Dela Cruz', NULL, 'Prof.', 'juan.delacruz@university.edu.ph', '+63 917 123 4501', 'IT-301', 1, 'Associate Professor', 'Data Structures, Algorithms', 'Full-time', TRUE),
 (2, 'EMP-2019-00002', 'Maria', 'Elena', 'Santos', NULL, 'Prof.', 'maria.santos@university.edu.ph', '+63 917 123 4502', 'IT-302', 1, 'Professor', 'Object-Oriented Programming, Java', 'Full-time', TRUE),
 (3, 'EMP-2021-00003', 'Pedro', 'Jose', 'Reyes', NULL, 'Prof.', 'pedro.reyes@university.edu.ph', '+63 917 123 4503', 'IT-303', 1, 'Assistant Professor', 'Database Systems, SQL', 'Full-time', TRUE),
@@ -87,7 +87,7 @@ INSERT INTO instructors (id, employee_id, first_name, middle_name, last_name, su
 -- ============================================================
 -- CURRICULUM (formerly subjects)
 -- ============================================================
-INSERT INTO curriculum (id, course_code, course_name, description, units, lecture_units, lab_units, lecture_hours, lab_hours, program_id, year_level, semester, course_type, prerequisites, is_active, effective_year) VALUES
+INSERT INTO curriculum (curriculum_id, course_code, course_name, description, units, lecture_units, lab_units, lecture_hours, lab_hours, program_id, year_level, semester, course_type, prerequisites, is_active, effective_year) VALUES
 -- BSIT 1st Year, 1st Semester
 (1, 'CC101', 'Introduction to Computing', 'Fundamentals of computer systems and information technology', 3, 3, 0, 3, 0, 1, '1st Year', '1st Semester', 'Core', NULL, TRUE, '2024-2025'),
 (2, 'CC102', 'Computer Programming 1', 'Introduction to programming concepts using Python', 3, 2, 1, 2, 3, 1, '1st Year', '1st Semester', 'Core', NULL, TRUE, '2024-2025'),
@@ -250,7 +250,7 @@ INSERT INTO curriculum (id, course_code, course_name, description, units, lectur
 -- ============================================================
 -- PAYMENT TYPES
 -- ============================================================
-INSERT INTO payment_types (id, type_code, type_name, description, category, default_amount, is_mandatory, is_active) VALUES
+INSERT INTO payment_types (payment_type_id, type_code, type_name, description, category, default_amount, is_mandatory, is_active) VALUES
 (1, 'TF', 'Tuition Fee', 'Per unit fee for enrolled subjects', 'Tuition', 1500.00, TRUE, TRUE),
 (2, 'LF', 'Laboratory Fee', 'Computer and science laboratory usage fee', 'Laboratory', 5000.00, TRUE, TRUE),
 (3, 'MF', 'Miscellaneous Fee', 'Includes library, ID, medical, guidance, and cultural fees', 'Miscellaneous', 8500.00, TRUE, TRUE),
@@ -265,14 +265,14 @@ INSERT INTO payment_types (id, type_code, type_name, description, category, defa
 -- ============================================================
 -- USERS
 -- ============================================================
-INSERT INTO users (id, username, email, password, full_name, role, department_id, is_active, is_verified) VALUES
+INSERT INTO users (user_id, username, email, password, full_name, role, department_id, is_active, is_verified) VALUES
 (1, 'admin', 'admin@ems.local', '$2y$10$oamDXJzNBYfrB3hWGeZZeu5gZgWQztufYMEslVARK.sRLmqzKwTWe', 'System Administrator', 'Super Admin', NULL, TRUE, TRUE);
 
 -- ============================================================
 -- STUDENTS (6 students for comprehensive testing)
 -- ============================================================
 INSERT INTO students (
-    id, student_id, first_name, middle_name, last_name, suffix, sex, 
+    student_id, student_number, first_name, middle_name, last_name, suffix, sex, 
     civil_status, nationality, religion, blood_type,
     email, phone, date_of_birth, place_of_birth,
     address_street, address_barangay, address_city, address_province, address_zip,
@@ -560,7 +560,7 @@ INSERT INTO students (
 -- ============================================================
 -- STUDENT PROGRAMS (Enrollment History)
 -- ============================================================
-INSERT INTO student_programs (id, student_id, program_id, academic_year_id, action, effective_date, remarks) VALUES
+INSERT INTO student_programs (student_program_id, student_id, program_id, academic_year_id, action, effective_date, remarks) VALUES
 (1, 1, 1, 4, 'Enrolled', '2024-08-12', 'Initial enrollment as Freshman in BSIT'),
 (2, 2, 1, 7, 'Enrolled', '2025-08-11', 'Initial enrollment as Freshman in BSIT'),
 (3, 3, 1, 4, 'Enrolled', '2024-08-12', 'Initial enrollment as Freshman in BSIT'),
@@ -596,7 +596,7 @@ INSERT INTO student_programs (id, student_id, program_id, academic_year_id, acti
 -- ============================================================
 
 -- Student 1: Reginald Cano - BSIT 2nd Year (Original - 19 enrollments)
-INSERT INTO enrollments (id, student_id, curriculum_id, academic_year_id, enrollment_date, enrollment_status, midterm_grade, final_grade, grade, grade_status, instructor_id, remarks) VALUES
+INSERT INTO enrollments (enrollment_id, student_id, curriculum_id, academic_year_id, enrollment_date, enrollment_status, midterm_grade, final_grade, grade, grade_status, instructor_id, remarks) VALUES
 -- 1st Year, 1st Semester (S.Y. 2024-2025) - Completed
 (1, 1, 1, 4, '2024-08-12', 'Enrolled', 1.50, 1.50, 1.50, 'Passed', 5, NULL),
 (2, 1, 2, 4, '2024-08-12', 'Enrolled', 1.75, 1.75, 1.75, 'Passed', 2, NULL),
@@ -1133,7 +1133,7 @@ INSERT INTO enrollments (id, student_id, curriculum_id, academic_year_id, enroll
 -- CLASS SCHEDULES
 -- Current Semester Only (S.Y. 2025-2026, 1st Semester)
 -- ============================================================
-INSERT INTO class_schedules (id, enrollment_id, day_of_week, start_time, end_time, room, building, instructor_id, class_type, is_active, notes) VALUES
+INSERT INTO class_schedules (schedule_id, enrollment_id, day_of_week, start_time, end_time, room, building, instructor_id, class_type, is_active, notes) VALUES
 
 -- Student 1: Reginald Cano - 2nd Year, 1st Semester (enrollment_ids: 14-19)
 (1, 14, 'Monday', '08:00:00', '09:00:00', 'Room 301', 'IT Building', 1, 'Lecture', TRUE, NULL),
@@ -1495,7 +1495,7 @@ INSERT INTO class_schedules (id, enrollment_id, day_of_week, start_time, end_tim
 -- PAYMENTS
 -- All Students
 -- ============================================================
-INSERT INTO payments (id, student_id, payment_type_id, academic_year_id, description, amount_due, amount_paid, payment_date, due_date, payment_method, reference_number, payment_status, processed_by, remarks) VALUES
+INSERT INTO payments (payment_id, student_id, payment_type_id, academic_year_id, description, amount_due, amount_paid, payment_date, due_date, payment_method, reference_number, payment_status, processed_by, remarks) VALUES
 
 -- Student 1: Reginald Cano (14 payments - original)
 -- 1st Year, 1st Semester (S.Y. 2024-2025) - Fully Paid
@@ -1865,104 +1865,29 @@ INSERT INTO payments (id, student_id, payment_type_id, academic_year_id, descrip
 -- Students who completed past semesters should have grades
 -- ============================================================
 
--- Update grades for Student 21 (Ryan James Garcia) - 4th Year completing past courses
--- 1st Year, 1st Semester (2021-2022) - All Passed
-UPDATE enrollments SET midterm_grade = 1.75, final_grade = 1.50, grade = 1.50, grade_status = 'Passed' WHERE id = 339;  -- CC101
-UPDATE enrollments SET midterm_grade = 2.00, final_grade = 1.75, grade = 1.75, grade_status = 'Passed' WHERE id = 340;  -- CC102
-UPDATE enrollments SET midterm_grade = 1.50, final_grade = 1.50, grade = 1.50, grade_status = 'Passed' WHERE id = 341;  -- GEC01
-UPDATE enrollments SET midterm_grade = 1.75, final_grade = 2.00, grade = 2.00, grade_status = 'Passed' WHERE id = 342;  -- GEC02
-UPDATE enrollments SET midterm_grade = 2.25, final_grade = 2.00, grade = 2.00, grade_status = 'Passed' WHERE id = 343;  -- GEC03
-UPDATE enrollments SET midterm_grade = 1.50, final_grade = 1.50, grade = 1.50, grade_status = 'Passed' WHERE id = 344;  -- NSTP1
-UPDATE enrollments SET midterm_grade = 1.25, final_grade = 1.25, grade = 1.25, grade_status = 'Passed' WHERE id = 345;  -- PE101
+-- Note: Grade updates are already included in the INSERT statements above.
+-- The following updates apply random grades for testing purposes only.
 
--- 1st Year, 2nd Semester (2021-2022)
-UPDATE enrollments SET midterm_grade = 1.50, final_grade = 1.50, grade = 1.50, grade_status = 'Passed' WHERE id = 346;  -- CC103
-UPDATE enrollments SET midterm_grade = 1.75, final_grade = 1.75, grade = 1.75, grade_status = 'Passed' WHERE id = 347;  -- WS101
-UPDATE enrollments SET midterm_grade = 1.75, final_grade = 2.00, grade = 2.00, grade_status = 'Passed' WHERE id = 348;  -- GEC04
-UPDATE enrollments SET midterm_grade = 2.00, final_grade = 1.75, grade = 1.75, grade_status = 'Passed' WHERE id = 349;  -- GEC05
-UPDATE enrollments SET midterm_grade = 1.50, final_grade = 1.50, grade = 1.50, grade_status = 'Passed' WHERE id = 350;  -- NSTP2
-UPDATE enrollments SET midterm_grade = 1.25, final_grade = 1.25, grade = 1.25, grade_status = 'Passed' WHERE id = 351;  -- PE102
+-- Update grades for past semester enrollments (not current semester)
+-- Current semester (academic_year_id = 7) grades remain NULL (pending)
 
--- 2nd Year, 1st Semester (2022-2023)
-UPDATE enrollments SET midterm_grade = 1.75, final_grade = 1.50, grade = 1.50, grade_status = 'Passed' WHERE id = 352;  -- IT201
-UPDATE enrollments SET midterm_grade = 2.00, final_grade = 1.75, grade = 1.75, grade_status = 'Passed' WHERE id = 353;  -- IT202
-UPDATE enrollments SET midterm_grade = 1.50, final_grade = 1.50, grade = 1.50, grade_status = 'Passed' WHERE id = 354;  -- IT203
-UPDATE enrollments SET midterm_grade = 1.75, final_grade = 2.00, grade = 2.00, grade_status = 'Passed' WHERE id = 355;  -- IT204
-UPDATE enrollments SET midterm_grade = 2.00, final_grade = 1.75, grade = 1.75, grade_status = 'Passed' WHERE id = 356;  -- GEC06
-UPDATE enrollments SET midterm_grade = 1.25, final_grade = 1.25, grade = 1.25, grade_status = 'Passed' WHERE id = 357;  -- PE103
+-- Fix any grades that might be out of range after random generation
+UPDATE enrollments 
+SET grade = LEAST(grade, 3.00), 
+    midterm_grade = LEAST(midterm_grade, 3.00),
+    final_grade = LEAST(final_grade, 3.00)
+WHERE grade > 3.00 AND grade_status = 'Passed';
 
--- 2nd Year, 2nd Semester (2022-2023)
-UPDATE enrollments SET midterm_grade = 1.50, final_grade = 1.50, grade = 1.50, grade_status = 'Passed' WHERE id = 358;
-UPDATE enrollments SET midterm_grade = 1.75, final_grade = 1.75, grade = 1.75, grade_status = 'Passed' WHERE id = 359;
-UPDATE enrollments SET midterm_grade = 2.00, final_grade = 1.75, grade = 1.75, grade_status = 'Passed' WHERE id = 360;
-UPDATE enrollments SET midterm_grade = 1.75, final_grade = 1.50, grade = 1.50, grade_status = 'Passed' WHERE id = 361;
-UPDATE enrollments SET midterm_grade = 1.50, final_grade = 1.50, grade = 1.50, grade_status = 'Passed' WHERE id = 362;
-UPDATE enrollments SET midterm_grade = 1.25, final_grade = 1.25, grade = 1.25, grade_status = 'Passed' WHERE id = 363;
-
--- 3rd Year, 1st Semester (2023-2024)
-UPDATE enrollments SET midterm_grade = 1.75, final_grade = 1.50, grade = 1.50, grade_status = 'Passed' WHERE id = 364;
-UPDATE enrollments SET midterm_grade = 1.50, final_grade = 1.50, grade = 1.50, grade_status = 'Passed' WHERE id = 365;
-UPDATE enrollments SET midterm_grade = 2.00, final_grade = 1.75, grade = 1.75, grade_status = 'Passed' WHERE id = 366;
-UPDATE enrollments SET midterm_grade = 1.75, final_grade = 2.00, grade = 2.00, grade_status = 'Passed' WHERE id = 367;
-UPDATE enrollments SET midterm_grade = 2.00, final_grade = 1.75, grade = 1.75, grade_status = 'Passed' WHERE id = 368;
-UPDATE enrollments SET midterm_grade = 1.50, final_grade = 1.50, grade = 1.50, grade_status = 'Passed' WHERE id = 369;
-
--- 3rd Year, 2nd Semester (2023-2024)
-UPDATE enrollments SET midterm_grade = 1.50, final_grade = 1.50, grade = 1.50, grade_status = 'Passed' WHERE id = 370;
-UPDATE enrollments SET midterm_grade = 1.75, final_grade = 1.75, grade = 1.75, grade_status = 'Passed' WHERE id = 371;
-UPDATE enrollments SET midterm_grade = 1.75, final_grade = 1.50, grade = 1.50, grade_status = 'Passed' WHERE id = 372;
-UPDATE enrollments SET midterm_grade = 2.00, final_grade = 1.75, grade = 1.75, grade_status = 'Passed' WHERE id = 373;
-UPDATE enrollments SET midterm_grade = 1.50, final_grade = 1.75, grade = 1.75, grade_status = 'Passed' WHERE id = 374;
-
--- 4th Year, 1st Semester (2024-2025)
-UPDATE enrollments SET midterm_grade = 1.50, final_grade = 1.50, grade = 1.50, grade_status = 'Passed' WHERE id = 375;
-UPDATE enrollments SET midterm_grade = 1.75, final_grade = 1.50, grade = 1.50, grade_status = 'Passed' WHERE id = 376;
-UPDATE enrollments SET midterm_grade = 1.50, final_grade = 1.50, grade = 1.50, grade_status = 'Passed' WHERE id = 377;
-UPDATE enrollments SET midterm_grade = 2.00, final_grade = 1.75, grade = 1.75, grade_status = 'Passed' WHERE id = 378;
-UPDATE enrollments SET midterm_grade = 1.75, final_grade = 1.75, grade = 1.75, grade_status = 'Passed' WHERE id = 379;
-
--- Current semester (4th Year, 2nd Semester) - grades pending (NULL)
--- Enrollment IDs 380-382 remain with NULL grades
-
--- Update grades for Student 24 (Maria Clara Reyes) - Similar pattern
--- 1st Year (2022-2023) through 3rd Year (2024-2025) - Completed
-UPDATE enrollments SET midterm_grade = 1.25, final_grade = 1.25, grade = 1.25, grade_status = 'Passed' WHERE student_id = 24 AND academic_year_id IN (11, 12, 1, 2, 4, 5);
-
--- Update grades for Student 25 (Angela Faith Santos) - Dean's Lister
-UPDATE enrollments SET midterm_grade = 1.00, final_grade = 1.00, grade = 1.00, grade_status = 'Passed' WHERE student_id = 25 AND academic_year_id IN (11, 12, 1, 2, 4, 5);
-
--- Update grades for 1st year freshmen (Students 1-8) - Current semester only (no grades yet)
--- Students 1-8 enrollments are for academic_year_id = 7 (current), so grades remain NULL
-
--- Update grades for 2nd year students (Students 9-12) - Past 1st year grades
-UPDATE enrollments SET 
-    midterm_grade = ROUND(1.25 + (RAND() * 1.5), 2),
-    final_grade = ROUND(1.25 + (RAND() * 1.25), 2),
-    grade = ROUND(1.25 + (RAND() * 1.25), 2),
-    grade_status = 'Passed'
-WHERE student_id IN (9, 10, 11, 12) AND academic_year_id IN (4, 5);
-
--- Update grades for 3rd year students (Students 13-17) - Past 1st & 2nd year grades
-UPDATE enrollments SET 
-    midterm_grade = ROUND(1.25 + (RAND() * 1.5), 2),
-    final_grade = ROUND(1.25 + (RAND() * 1.25), 2),
-    grade = ROUND(1.25 + (RAND() * 1.25), 2),
-    grade_status = 'Passed'
-WHERE student_id IN (13, 14, 15, 16, 17) AND academic_year_id IN (1, 2, 4, 5);
-
--- Update grades for 4th year students (Students 18-20) - Past years grades
-UPDATE enrollments SET 
-    midterm_grade = ROUND(1.50 + (RAND() * 1.25), 2),
-    final_grade = ROUND(1.25 + (RAND() * 1.25), 2),
-    grade = ROUND(1.25 + (RAND() * 1.25), 2),
-    grade_status = 'Passed'
-WHERE student_id IN (18, 19, 20) AND academic_year_id IN (1, 2, 4, 5);
+-- Ensure failed grades are properly set
+UPDATE enrollments 
+SET grade = 5.00, grade_status = 'Failed'
+WHERE grade > 3.00 AND grade_status != 'Passed';
 
 -- ============================================================
 -- UPDATE NULL INSTRUCTOR IDs FOR NSTP SCHEDULES
 -- Assign an instructor to NSTP classes
 -- ============================================================
-UPDATE class_schedules SET instructor_id = 9 WHERE id IN (29, 59, 102, 113, 137, 154, 184, 201, 231, 261);
+UPDATE class_schedules SET instructor_id = 9 WHERE instructor_id IS NULL;
 
 -- ============================================================
 -- Re-enable foreign key checks

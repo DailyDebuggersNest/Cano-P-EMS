@@ -105,15 +105,15 @@ $sortOrder = $_GET['order'] ?? 'asc';
 // Apply filters to students
 if (!empty($students)) {
     $students = array_filter($students, function($student) use ($searchQuery, $filterProgram, $filterYearLevel, $filterSemester, $filterStatus, $filterSex) {
-        // Search filter (name, student_id, email)
+        // Search filter (name, student_number, email)
         if (!empty($searchQuery)) {
             $search = strtolower($searchQuery);
             $fullName = strtolower(($student['first_name'] ?? '') . ' ' . ($student['middle_name'] ?? '') . ' ' . ($student['last_name'] ?? ''));
-            $studentId = strtolower($student['student_id'] ?? '');
+            $studentNumber = strtolower($student['student_number'] ?? '');
             $email = strtolower($student['email'] ?? '');
             
             if (strpos($fullName, $search) === false && 
-                strpos($studentId, $search) === false && 
+                strpos($studentNumber, $search) === false && 
                 strpos($email, $search) === false) {
                 return false;
             }
@@ -232,6 +232,9 @@ include __DIR__ . '/../templates/sidebar.php';
                                     <?php echo sanitize($prog['program_code']); ?>
                                 </option>
                             <?php endforeach; ?>
+                        <?php else: ?>
+                            <option value="Bachelor of Science in Information Technology" <?php echo $filterProgram === 'Bachelor of Science in Information Technology' ? 'selected' : ''; ?>>BSIT</option>
+                            <option value="Bachelor of Science in Computer Science" <?php echo $filterProgram === 'Bachelor of Science in Computer Science' ? 'selected' : ''; ?>>BSCS</option>
                         <?php endif; ?>
                     </select>
                 </div>
@@ -243,6 +246,24 @@ include __DIR__ . '/../templates/sidebar.php';
                         <option value="2nd Year" <?php echo $filterYearLevel === '2nd Year' ? 'selected' : ''; ?>>2nd Year</option>
                         <option value="3rd Year" <?php echo $filterYearLevel === '3rd Year' ? 'selected' : ''; ?>>3rd Year</option>
                         <option value="4th Year" <?php echo $filterYearLevel === '4th Year' ? 'selected' : ''; ?>>4th Year</option>
+                        <option value="5th Year" <?php echo $filterYearLevel === '5th Year' ? 'selected' : ''; ?>>5th Year</option>
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <select name="semester" class="form-control filter-select">
+                        <option value="">All Semesters</option>
+                        <option value="1st Semester" <?php echo $filterSemester === '1st Semester' ? 'selected' : ''; ?>>1st Semester</option>
+                        <option value="2nd Semester" <?php echo $filterSemester === '2nd Semester' ? 'selected' : ''; ?>>2nd Semester</option>
+                        <option value="Summer" <?php echo $filterSemester === 'Summer' ? 'selected' : ''; ?>>Summer</option>
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <select name="sex" class="form-control filter-select">
+                        <option value="">All Sex</option>
+                        <option value="Male" <?php echo $filterSex === 'Male' ? 'selected' : ''; ?>>Male</option>
+                        <option value="Female" <?php echo $filterSex === 'Female' ? 'selected' : ''; ?>>Female</option>
                     </select>
                 </div>
                 
@@ -267,7 +288,7 @@ include __DIR__ . '/../templates/sidebar.php';
     
     <div class="panel">
         <?php 
-        $hasFilters = !empty($searchQuery) || !empty($filterProgram) || !empty($filterYearLevel) || !empty($filterStatus);
+        $hasFilters = !empty($searchQuery) || !empty($filterProgram) || !empty($filterYearLevel) || !empty($filterSemester) || !empty($filterStatus) || !empty($filterSex);
         $totalCount = count($students);
         ?>
         
@@ -304,14 +325,16 @@ include __DIR__ . '/../templates/sidebar.php';
             if (!empty($searchQuery)) $filterParams['search'] = $searchQuery;
             if (!empty($filterProgram)) $filterParams['program'] = $filterProgram;
             if (!empty($filterYearLevel)) $filterParams['year_level'] = $filterYearLevel;
+            if (!empty($filterSemester)) $filterParams['semester'] = $filterSemester;
             if (!empty($filterStatus)) $filterParams['status'] = $filterStatus;
+            if (!empty($filterSex)) $filterParams['sex'] = $filterSex;
             ?>
             <div class="table-container">
                 <table>
                     <thead>
                         <tr>
-                            <th width="50">No.</th>
-                            <th class="sortable" width="120">
+                            <th>Seq</th>
+                            <th class="sortable">
                                 <a href="<?php echo getSortUrl('student_id', $sortBy, $sortOrder, $filterParams); ?>">
                                     <span>Student ID</span>
                                     <?php if ($sortBy === 'student_id'): ?><i class="fas fa-sort-<?php echo $sortOrder === 'asc' ? 'up' : 'down'; ?>"></i><?php else: ?><i class="fas fa-sort sort-inactive"></i><?php endif; ?>
@@ -323,49 +346,47 @@ include __DIR__ . '/../templates/sidebar.php';
                                     <?php if ($sortBy === 'name'): ?><i class="fas fa-sort-<?php echo $sortOrder === 'asc' ? 'up' : 'down'; ?>"></i><?php else: ?><i class="fas fa-sort sort-inactive"></i><?php endif; ?>
                                 </a>
                             </th>
-                            <th class="sortable" width="80">
+                            <th class="sortable">
                                 <a href="<?php echo getSortUrl('sex', $sortBy, $sortOrder, $filterParams); ?>">
                                     <span>Sex</span>
                                     <?php if ($sortBy === 'sex'): ?><i class="fas fa-sort-<?php echo $sortOrder === 'asc' ? 'up' : 'down'; ?>"></i><?php else: ?><i class="fas fa-sort sort-inactive"></i><?php endif; ?>
                                 </a>
                             </th>
-                            <th class="sortable" width="100">
+                            <th class="sortable">
                                 <a href="<?php echo getSortUrl('program', $sortBy, $sortOrder, $filterParams); ?>">
                                     <span>Program</span>
                                     <?php if ($sortBy === 'program'): ?><i class="fas fa-sort-<?php echo $sortOrder === 'asc' ? 'up' : 'down'; ?>"></i><?php else: ?><i class="fas fa-sort sort-inactive"></i><?php endif; ?>
                                 </a>
                             </th>
-                            <th class="sortable" width="100">
+                            <th class="sortable">
                                 <a href="<?php echo getSortUrl('year_level', $sortBy, $sortOrder, $filterParams); ?>">
                                     <span>Year Level</span>
                                     <?php if ($sortBy === 'year_level'): ?><i class="fas fa-sort-<?php echo $sortOrder === 'asc' ? 'up' : 'down'; ?>"></i><?php else: ?><i class="fas fa-sort sort-inactive"></i><?php endif; ?>
                                 </a>
                             </th>
-                            <th class="sortable" width="100">
+                            <th class="sortable">
                                 <a href="<?php echo getSortUrl('status', $sortBy, $sortOrder, $filterParams); ?>">
                                     <span>Status</span>
                                     <?php if ($sortBy === 'status'): ?><i class="fas fa-sort-<?php echo $sortOrder === 'asc' ? 'up' : 'down'; ?>"></i><?php else: ?><i class="fas fa-sort sort-inactive"></i><?php endif; ?>
                                 </a>
                             </th>
-                            <th class="sortable" width="110">
+                            <th class="sortable">
                                 <a href="<?php echo getSortUrl('admission_date', $sortBy, $sortOrder, $filterParams); ?>">
-                                    <span>Enrolled</span>
+                                    <span>Edate</span>
                                     <?php if ($sortBy === 'admission_date'): ?><i class="fas fa-sort-<?php echo $sortOrder === 'asc' ? 'up' : 'down'; ?>"></i><?php else: ?><i class="fas fa-sort sort-inactive"></i><?php endif; ?>
                                 </a>
                             </th>
-                            <th width="100">Actions</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php $seq = 1; foreach ($students as $student): ?>
                             <tr>
-                                <td class="text-center"><?php echo $seq++; ?></td>
-                                <td><code class="student-id"><?php echo sanitize($student['student_id'] ?? 'N/A'); ?></code></td>
+                                <td><?php echo $seq++; ?></td>
+                                <td><span class="student-id"><?php echo sanitize($student['student_number'] ?? 'N/A'); ?></span></td>
                                 <td>
                                     <div class="user-info">
-                                        <div class="user-avatar">
-                                            <i class="fas fa-<?php echo ($student['sex'] ?? '') === 'Female' ? 'female' : 'male'; ?>"></i>
-                                        </div>
+                                        <div class="user-avatar"><i class="fas fa-user"></i></div>
                                         <div>
                                             <strong><?php echo sanitize(getStudentFullName($student, 'formal')); ?></strong>
                                             <br><small class="text-muted"><?php echo sanitize($student['email']); ?></small>
@@ -386,12 +407,12 @@ include __DIR__ . '/../templates/sidebar.php';
                                     $programCode = $student['program_code'] ?? '';
                                     $programName = $student['program_name'] ?? '';
                                     if (!empty($programCode)) {
-                                        echo '<span class="badge badge-primary" title="' . sanitize($programName) . '">' . sanitize($programCode) . '</span>';
+                                        echo '<span class="program-abbr" data-tooltip="' . sanitize($programName) . '">' . sanitize($programCode) . '</span>';
                                     } elseif (!empty($programName)) {
                                         $progInfo = getProgramAbbreviation($programName);
-                                        echo '<span class="badge badge-primary" title="' . sanitize($progInfo['name']) . '">' . sanitize($progInfo['code']) . '</span>';
+                                        echo '<span class="program-abbr" data-tooltip="' . sanitize($progInfo['name']) . '">' . sanitize($progInfo['code']) . '</span>';
                                     } else {
-                                        echo '<span class="text-muted">—</span>';
+                                        echo '—';
                                     }
                                     ?>
                                 </td>
@@ -408,19 +429,13 @@ include __DIR__ . '/../templates/sidebar.php';
                                         <?php echo sanitize($status); ?>
                                     </span>
                                 </td>
-                                <td class="date-cell">
+                                <td>
                                     <?php echo !empty($student['admission_date']) ? date('M d, Y', strtotime($student['admission_date'])) : '—'; ?>
                                 </td>
-                                <td class="text-center">
+                                <td>
                                     <div class="table-actions">
-                                        <a href="students.php?action=view&id=<?php echo $student['id']; ?>" 
-                                           class="btn btn-outline btn-sm" title="View Profile">
-                                            <i class="fas fa-eye"></i>
-                                        </a>
-                                        <a href="students.php?action=edit&id=<?php echo $student['id']; ?>" 
-                                           class="btn btn-outline btn-sm" title="Edit Student">
-                                            <i class="fas fa-edit"></i>
-                                        </a>
+                                        <a href="students.php?action=view&id=<?php echo $student['student_id']; ?>" 
+                                           class="btn btn-outline btn-sm" title="View Profile"><i class="fas fa-eye"></i></a>
                                     </div>
                                 </td>
                             </tr>
@@ -442,21 +457,21 @@ include __DIR__ . '/../templates/sidebar.php';
     $activeTab = $_GET['tab'] ?? 'personal';
     
     // Pre-fetch data for all tabs
-    $enrollments = getCurrentEnrollments($student['id']);
-    $enrollmentStats = getEnrollmentStats($student['id']);
-    $payments = getCurrentPayments($student['id']);
-    $paymentSummary = getPaymentSummary($student['id']);
-    $schedulesByDay = getStudentSchedulesByDay($student['id']);
-    $scheduleStats = getScheduleStats($student['id']);
+    $enrollments = getCurrentEnrollments($student['student_id']);
+    $enrollmentStats = getEnrollmentStats($student['student_id']);
+    $payments = getCurrentPayments($student['student_id']);
+    $paymentSummary = getPaymentSummary($student['student_id']);
+    $schedulesByDay = getStudentSchedulesByDay($student['student_id']);
+    $scheduleStats = getScheduleStats($student['student_id']);
     ?>
     
     <div class="page-header">
         <div>
             <h1><i class="fas fa-id-card"></i> Student Profile</h1>
-            <p class="page-subtitle"><?php echo sanitize($student['student_id'] ?? 'Student Details'); ?></p>
+            <p class="page-subtitle"><?php echo sanitize($student['student_number'] ?? 'Student Details'); ?></p>
         </div>
         <div class="page-actions">
-            <a href="students.php?action=edit&id=<?php echo $student['id']; ?>" class="btn btn-primary"><i class="fas fa-edit"></i> Edit</a>
+            <a href="students.php?action=edit&id=<?php echo $student['student_id']; ?>" class="btn btn-primary"><i class="fas fa-edit"></i> Edit</a>
             <a href="students.php" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Back</a>
         </div>
     </div>
@@ -469,7 +484,7 @@ include __DIR__ . '/../templates/sidebar.php';
             </div>
             <div class="profile-header-info">
                 <h2><?php echo sanitize(getStudentFullName($student, 'full')); ?></h2>
-                <p class="student-id-display"><?php echo sanitize($student['student_id'] ?? 'No ID'); ?></p>
+                <p class="student-id-display"><?php echo sanitize($student['student_number'] ?? 'No ID'); ?></p>
                 <div class="profile-badges">
                     <?php if (!empty($student['sex'])): ?>
                         <span class="badge badge-<?php echo $student['sex'] === 'Male' ? 'info' : 'pink'; ?>">
@@ -510,22 +525,25 @@ include __DIR__ . '/../templates/sidebar.php';
     
     <!-- Profile Tab Navigation -->
     <div class="profile-tabs">
-        <a href="students.php?action=view&id=<?php echo $student['id']; ?>&tab=personal" 
+        <a href="students.php?action=view&id=<?php echo $student['student_id']; ?>&tab=personal" 
            class="profile-tab <?php echo $activeTab === 'personal' ? 'active' : ''; ?>">
             <i class="fas fa-user"></i>
             <span>Personal Info</span>
         </a>
-        <a href="students.php?action=view&id=<?php echo $student['id']; ?>&tab=schedule" 
+        <a href="students.php?action=view&id=<?php echo $student['student_id']; ?>&tab=schedule" 
            class="profile-tab <?php echo $activeTab === 'schedule' ? 'active' : ''; ?>">
             <i class="fas fa-calendar-alt"></i>
             <span>Schedule</span>
+            <?php if ($scheduleStats['total_classes'] > 0): ?>
+                <span class="tab-badge"><?php echo $scheduleStats['total_classes']; ?></span>
+            <?php endif; ?>
         </a>
-        <a href="students.php?action=view&id=<?php echo $student['id']; ?>&tab=subjects" 
+        <a href="students.php?action=view&id=<?php echo $student['student_id']; ?>&tab=subjects" 
            class="profile-tab <?php echo $activeTab === 'subjects' ? 'active' : ''; ?>">
             <i class="fas fa-book"></i>
             <span>Subjects</span>
         </a>
-        <a href="students.php?action=view&id=<?php echo $student['id']; ?>&tab=payments" 
+        <a href="students.php?action=view&id=<?php echo $student['student_id']; ?>&tab=payments" 
            class="profile-tab <?php echo $activeTab === 'payments' ? 'active' : ''; ?>">
             <i class="fas fa-money-bill-wave"></i>
             <span>Payments</span>
@@ -906,75 +924,69 @@ include __DIR__ . '/../templates/sidebar.php';
             <div id="list-view" class="schedule-view-content" style="display: none;">
                 <div class="panel">
                     <div class="panel-header">
-                        <h3><i class="fas fa-list-alt"></i> Class Schedule</h3>
+                        <h3><i class="fas fa-list-alt"></i> Class Schedule (List)</h3>
                     </div>
-                    <div class="panel-body">
-                        <div class="table-container">
-                            <table class="data-table schedule-table">
-                                <thead>
-                                    <tr>
-                                        <th style="width: 50px;">#</th>
-                                        <th style="width: 100px;">Day</th>
-                                        <th style="width: 140px;">Time</th>
-                                        <th style="width: 100px;">Code</th>
-                                        <th>Subject Name</th>
-                                        <th style="width: 90px;" class="text-center">Type</th>
-                                        <th style="width: 120px;">Room</th>
-                                        <th>Instructor</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php 
-                                    $num = 1;
-                                    foreach ($weekdays as $day):
-                                        if (!empty($schedulesByDay[$day])):
-                                            foreach ($schedulesByDay[$day] as $class):
+                    <div class="panel-body schedule-list-body">
+                        <?php foreach ($weekdays as $day): ?>
+                            <?php if (!empty($schedulesByDay[$day])): ?>
+                            <div class="day-schedule-block <?php echo date('l') === $day ? 'today' : ''; ?>">
+                                <div class="day-header-block">
+                                    <h4>
+                                        <i class="fas fa-calendar-day"></i>
+                                        <?php echo $day; ?>
+                                        <?php if (date('l') === $day): ?>
+                                            <span class="today-badge">Today</span>
+                                        <?php endif; ?>
+                                    </h4>
+                                    <span class="class-count"><?php echo count($schedulesByDay[$day]); ?> class<?php echo count($schedulesByDay[$day]) > 1 ? 'es' : ''; ?></span>
+                                </div>
+                                <div class="day-classes">
+                                    <?php foreach ($schedulesByDay[$day] as $class): 
+                                        $colorClass = getClassTypeColor($class['class_type']);
                                     ?>
-                                    <tr>
-                                        <td class="text-center"><?php echo $num++; ?></td>
-                                        <td>
-                                            <span class="day-badge <?php echo date('l') === $day ? 'today' : ''; ?>">
-                                                <?php echo $day; ?>
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <span class="time-range">
-                                                <?php echo formatScheduleTime($class['start_time']); ?> - <?php echo formatScheduleTime($class['end_time']); ?>
-                                            </span>
-                                        </td>
-                                        <td><code class="subject-code-badge"><?php echo sanitize($class['subject_code']); ?></code></td>
-                                        <td><strong><?php echo sanitize($class['subject_name']); ?></strong></td>
-                                        <td class="text-center">
-                                            <?php 
-                                            $typeClass = strtolower($class['class_type']) === 'lecture' ? 'primary' : 
-                                                        (strtolower($class['class_type']) === 'laboratory' ? 'warning' : 'info');
-                                            ?>
-                                            <span class="badge badge-<?php echo $typeClass; ?>">
-                                                <?php echo sanitize($class['class_type']); ?>
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <?php echo sanitize($class['room'] ?? 'TBA'); ?>
-                                            <?php if (!empty($class['building'])): ?>
-                                                <br><small class="text-muted"><?php echo sanitize($class['building']); ?></small>
-                                            <?php endif; ?>
-                                        </td>
-                                        <td>
-                                            <?php if (!empty($class['instructor_last_name'])): ?>
-                                                <?php echo sanitize(trim($class['instructor_title'] . ' ' . $class['instructor_first_name'] . ' ' . $class['instructor_last_name'])); ?>
-                                            <?php else: ?>
-                                                <span class="text-muted">TBA</span>
-                                            <?php endif; ?>
-                                        </td>
-                                    </tr>
-                                    <?php 
-                                            endforeach;
-                                        endif;
-                                    endforeach; 
-                                    ?>
-                                </tbody>
-                            </table>
-                        </div>
+                                    <div class="class-card <?php echo $colorClass; ?>">
+                                        <div class="class-time-block">
+                                            <span class="start-time"><?php echo formatScheduleTime($class['start_time']); ?></span>
+                                            <span class="time-separator">–</span>
+                                            <span class="end-time"><?php echo formatScheduleTime($class['end_time']); ?></span>
+                                        </div>
+                                        <div class="class-info-block">
+                                            <div class="class-main-info">
+                                                <code class="subject-code-badge"><?php echo sanitize($class['subject_code']); ?></code>
+                                                <span class="subject-name"><?php echo sanitize($class['subject_name']); ?></span>
+                                            </div>
+                                            <div class="class-meta-info">
+                                                <span class="meta-item">
+                                                    <i class="<?php echo getClassTypeIcon($class['class_type']); ?>"></i>
+                                                    <?php echo sanitize($class['class_type']); ?>
+                                                </span>
+                                                <span class="meta-item">
+                                                    <i class="fas fa-door-open"></i>
+                                                    <?php echo sanitize($class['room'] ?? 'TBA'); ?>
+                                                </span>
+                                                <?php if (!empty($class['building'])): ?>
+                                                <span class="meta-item">
+                                                    <i class="fas fa-building"></i>
+                                                    <?php echo sanitize($class['building']); ?>
+                                                </span>
+                                                <?php endif; ?>
+                                                <?php if (!empty($class['instructor_last_name'])): ?>
+                                                <span class="meta-item">
+                                                    <i class="fas fa-user-tie"></i>
+                                                    <?php echo sanitize(trim($class['instructor_title'] . ' ' . $class['instructor_first_name'] . ' ' . $class['instructor_last_name'])); ?>
+                                                </span>
+                                                <?php endif; ?>
+                                            </div>
+                                        </div>
+                                        <div class="class-units">
+                                            <span class="units-badge"><?php echo $class['units']; ?> units</span>
+                                        </div>
+                                    </div>
+                                    <?php endforeach; ?>
+                                </div>
+                            </div>
+                            <?php endif; ?>
+                        <?php endforeach; ?>
                         
                         <?php 
                         // Check if there are no classes at all
@@ -1026,7 +1038,7 @@ include __DIR__ . '/../templates/sidebar.php';
             
             <!-- Enrollment History - Dropdown Selector -->
             <?php 
-            $allEnrollments = getStudentEnrollments($student['id']); 
+            $allEnrollments = getStudentEnrollments($student['student_id']); 
             
             // Group enrollments by Year Level and Semester
             $groupedEnrollments = [];
@@ -1260,7 +1272,7 @@ include __DIR__ . '/../templates/sidebar.php';
             
             <!-- Payment History - Dropdown Selector -->
             <?php 
-            $allPayments = getStudentPayments($student['id']);
+            $allPayments = getStudentPayments($student['student_id']);
             
             // Group payments by academic year and semester
             $groupedPayments = [];
@@ -1692,7 +1704,7 @@ include __DIR__ . '/../templates/sidebar.php';
                             <option value="">Select Program</option>
                             <?php if (!empty($programs)): ?>
                                 <?php foreach ($programs as $prog): ?>
-                                    <option value="<?php echo $prog['id']; ?>">
+                                    <option value="<?php echo $prog['program_id']; ?>">
                                         <?php echo sanitize($prog['program_code'] . ' - ' . $prog['program_name']); ?>
                                     </option>
                                 <?php endforeach; ?>
@@ -1777,15 +1789,15 @@ include __DIR__ . '/../templates/sidebar.php';
     <div class="page-header">
         <div>
             <h1><i class="fas fa-user-edit"></i> Edit Student</h1>
-            <p class="page-subtitle"><?php echo sanitize($student['student_id'] ?? 'Update student information'); ?></p>
+            <p class="page-subtitle"><?php echo sanitize($student['student_number'] ?? 'Update student information'); ?></p>
         </div>
         <div class="page-actions">
-            <a href="students.php?action=view&id=<?php echo $student['id']; ?>" class="btn btn-outline"><i class="fas fa-eye"></i> View Profile</a>
+            <a href="students.php?action=view&id=<?php echo $student['student_id']; ?>" class="btn btn-outline"><i class="fas fa-eye"></i> View Profile</a>
             <a href="students.php" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Back</a>
         </div>
     </div>
     
-    <form method="POST" action="students.php?action=edit&id=<?php echo $student['id']; ?>" class="sis-form">
+    <form method="POST" action="students.php?action=edit&id=<?php echo $student['student_id']; ?>" class="sis-form">
         <!-- Personal Information Section -->
         <div class="panel">
             <div class="panel-header">
@@ -2019,8 +2031,8 @@ include __DIR__ . '/../templates/sidebar.php';
                             <option value="">Select Program</option>
                             <?php if (!empty($programs)): ?>
                                 <?php foreach ($programs as $prog): ?>
-                                    <option value="<?php echo $prog['id']; ?>"
-                                            <?php echo ($student['current_program_id'] ?? '') == $prog['id'] ? 'selected' : ''; ?>>
+                                    <option value="<?php echo $prog['program_id']; ?>"
+                                            <?php echo ($student['current_program_id'] ?? '') == $prog['program_id'] ? 'selected' : ''; ?>>
                                         <?php echo sanitize($prog['program_code'] . ' - ' . $prog['program_name']); ?>
                                     </option>
                                 <?php endforeach; ?>

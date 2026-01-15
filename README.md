@@ -1,6 +1,6 @@
 # EMS Pro - Student Information System
 
-A modern, professional Student Information System built with PHP, MySQL, CSS, and JavaScript. Features a desktop application-style interface with comprehensive student management.
+A simple Enrollment Management System built with PHP, MySQL, CSS, and JavaScript. Features a desktop application-style interface with comprehensive student management.
 
 ## Features
 

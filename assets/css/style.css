@@ -985,7 +985,7 @@ tr:hover td {
 }
 
 .badge-primary {
-    background-color: #0284c7;
+    background-color: #0369a1;
     color: #ffffff;
 }
 
@@ -1668,13 +1668,6 @@ th.sortable a:hover {
     padding: 4px 8px;
     border-radius: var(--radius-sm);
     font-weight: 500;
-    white-space: nowrap;
-    display: inline-block;
-}
-
-/* Date display - no wrap */
-.date-cell {
-    white-space: nowrap;
 }
 
 /* Program abbreviation with tooltip */
@@ -2557,38 +2550,6 @@ th.sortable a:hover {
 
 .grades-table tbody tr {
     transition: background-color 0.15s ease;
-}
-
-/* Schedule Table Specific */
-.schedule-table th {
-    background: linear-gradient(to bottom, var(--input-bg), #e9ecef);
-    border-bottom: 2px solid var(--border-color);
-}
-
-.schedule-table tbody tr {
-    transition: background-color 0.15s ease;
-}
-
-.day-badge {
-    display: inline-block;
-    padding: 0.25rem 0.5rem;
-    border-radius: 4px;
-    font-size: 0.75rem;
-    font-weight: 600;
-    background: #f1f5f9;
-    color: #475569;
-}
-
-.day-badge.today {
-    background: #dbeafe;
-    color: #1d4ed8;
-}
-
-.time-range {
-    font-size: 0.8rem;
-    font-weight: 500;
-    color: var(--text-primary);
-    white-space: nowrap;
 }
 
 /* ============================================

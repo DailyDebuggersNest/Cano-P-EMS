@@ -1,10 +1,10 @@
 -- ============================================================
 -- STUDENT INFORMATION SYSTEM (SIS) - DATABASE SCHEMA
 -- ============================================================
--- Version: 2.0.0
+-- Version: 2.3.0
 -- Author: EMS Development Team
 -- Database: MySQL 8.0+ / MariaDB 10.5+
--- Last Updated: 2026-01-10
+-- Last Updated: 2026-01-15
 -- 
 -- This file contains the complete database structure.
 -- For sample data, see: sis_sample_data.sql
@@ -40,7 +40,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 -- ============================================================
 DROP TABLE IF EXISTS departments;
 CREATE TABLE departments (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    department_id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     department_code VARCHAR(20) NOT NULL UNIQUE,
     department_name VARCHAR(150) NOT NULL,
     college VARCHAR(150),
@@ -63,7 +63,7 @@ COMMENT='Academic departments and colleges';
 -- ============================================================
 DROP TABLE IF EXISTS programs;
 CREATE TABLE programs (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    program_id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     program_code VARCHAR(20) NOT NULL UNIQUE,
     program_name VARCHAR(150) NOT NULL,
     department_id INT UNSIGNED,
@@ -77,7 +77,7 @@ CREATE TABLE programs (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     
     CONSTRAINT fk_program_department 
-        FOREIGN KEY (department_id) REFERENCES departments(id) 
+        FOREIGN KEY (department_id) REFERENCES departments(department_id) 
         ON DELETE SET NULL ON UPDATE CASCADE,
     
     INDEX idx_program_active (is_active),
@@ -92,7 +92,7 @@ COMMENT='Academic degree programs offered';
 -- ============================================================
 DROP TABLE IF EXISTS academic_years;
 CREATE TABLE academic_years (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    academic_year_id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     academic_year VARCHAR(20) NOT NULL COMMENT 'Format: YYYY-YYYY (e.g., 2025-2026)',
     semester ENUM('1st Semester', '2nd Semester', 'Summer') NOT NULL,
     start_date DATE NOT NULL,
@@ -110,13 +110,16 @@ CREATE TABLE academic_years (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 COMMENT='Academic calendar and term management';
 
+-- Note: MySQL/MariaDB triggers cannot update the same table they're triggered on.
+-- Use the stored procedure sp_set_current_academic_year() instead to safely set the current term.
+
 -- ============================================================
 -- TABLE: curriculum
 -- Course/subject offerings per program (replaces "subjects")
 -- ============================================================
 DROP TABLE IF EXISTS curriculum;
 CREATE TABLE curriculum (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    curriculum_id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     course_code VARCHAR(20) NOT NULL,
     course_name VARCHAR(150) NOT NULL,
     description TEXT,
@@ -146,7 +149,7 @@ CREATE TABLE curriculum (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     
     CONSTRAINT fk_curriculum_program 
-        FOREIGN KEY (program_id) REFERENCES programs(id) 
+        FOREIGN KEY (program_id) REFERENCES programs(program_id) 
         ON DELETE CASCADE ON UPDATE CASCADE,
     
     UNIQUE KEY uk_course_program (course_code, program_id, effective_year),
@@ -162,7 +165,7 @@ COMMENT='Curriculum courses and subject offerings per program';
 -- ============================================================
 DROP TABLE IF EXISTS instructors;
 CREATE TABLE instructors (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    instructor_id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     employee_id VARCHAR(20) UNIQUE COMMENT 'Format: EMP-YYYY-XXXXX',
     
     -- Personal Information
@@ -190,7 +193,7 @@ CREATE TABLE instructors (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     
     CONSTRAINT fk_instructor_department 
-        FOREIGN KEY (department_id) REFERENCES departments(id) 
+        FOREIGN KEY (department_id) REFERENCES departments(department_id) 
         ON DELETE SET NULL ON UPDATE CASCADE,
     
     INDEX idx_instructor_dept (department_id),
@@ -205,8 +208,8 @@ COMMENT='Faculty members and instructors';
 -- ============================================================
 DROP TABLE IF EXISTS students;
 CREATE TABLE students (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    student_id VARCHAR(20) NOT NULL UNIQUE COMMENT 'Format: STU-YYYY-XXXXX',
+    student_id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    student_number VARCHAR(20) NOT NULL UNIQUE COMMENT 'Format: STU-YYYY-XXXXX',
     
     -- Personal Information
     first_name VARCHAR(50) NOT NULL,
@@ -269,7 +272,7 @@ CREATE TABLE students (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     
     CONSTRAINT fk_student_program 
-        FOREIGN KEY (current_program_id) REFERENCES programs(id) 
+        FOREIGN KEY (current_program_id) REFERENCES programs(program_id) 
         ON DELETE SET NULL ON UPDATE CASCADE,
     
     INDEX idx_student_status (student_status),
@@ -286,7 +289,7 @@ COMMENT='Student master records';
 -- ============================================================
 DROP TABLE IF EXISTS student_programs;
 CREATE TABLE student_programs (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    student_program_id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     student_id INT UNSIGNED NOT NULL,
     program_id INT UNSIGNED NOT NULL,
     academic_year_id INT UNSIGNED NOT NULL,
@@ -298,13 +301,13 @@ CREATE TABLE student_programs (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     
     CONSTRAINT fk_sp_student 
-        FOREIGN KEY (student_id) REFERENCES students(id) 
+        FOREIGN KEY (student_id) REFERENCES students(student_id) 
         ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT fk_sp_program 
-        FOREIGN KEY (program_id) REFERENCES programs(id) 
+        FOREIGN KEY (program_id) REFERENCES programs(program_id) 
         ON DELETE RESTRICT ON UPDATE CASCADE,
     CONSTRAINT fk_sp_academic_year 
-        FOREIGN KEY (academic_year_id) REFERENCES academic_years(id) 
+        FOREIGN KEY (academic_year_id) REFERENCES academic_years(academic_year_id) 
         ON DELETE RESTRICT ON UPDATE CASCADE,
     
     INDEX idx_sp_student (student_id),
@@ -319,7 +322,7 @@ COMMENT='Student program enrollment and transfer history';
 -- ============================================================
 DROP TABLE IF EXISTS enrollments;
 CREATE TABLE enrollments (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    enrollment_id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     student_id INT UNSIGNED NOT NULL,
     curriculum_id INT UNSIGNED NOT NULL,
     academic_year_id INT UNSIGNED NOT NULL,
@@ -328,10 +331,10 @@ CREATE TABLE enrollments (
     enrollment_date DATE NOT NULL,
     enrollment_status ENUM('Enrolled', 'Dropped', 'Withdrawn', 'Cancelled') DEFAULT 'Enrolled',
     
-    -- Grading
-    midterm_grade DECIMAL(5,2) DEFAULT NULL,
-    final_grade DECIMAL(5,2) DEFAULT NULL,
-    grade DECIMAL(5,2) DEFAULT NULL COMMENT 'Final computed grade',
+    -- Grading (Philippine Grade Scale: 1.00=Excellent to 3.00=Passing, 5.00=Failed)
+    midterm_grade DECIMAL(3,2) DEFAULT NULL,
+    final_grade DECIMAL(3,2) DEFAULT NULL,
+    grade DECIMAL(3,2) DEFAULT NULL COMMENT 'Final computed grade (1.00-3.00=Pass, 5.00=Fail)',
     grade_status ENUM('Pending', 'Passed', 'Failed', 'Incomplete', 'Dropped', 'Withdrawn', 'No Grade') DEFAULT 'Pending',
     grade_remarks VARCHAR(100),
     
@@ -344,22 +347,28 @@ CREATE TABLE enrollments (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     
     CONSTRAINT fk_enrollment_student 
-        FOREIGN KEY (student_id) REFERENCES students(id) 
+        FOREIGN KEY (student_id) REFERENCES students(student_id) 
         ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT fk_enrollment_curriculum 
-        FOREIGN KEY (curriculum_id) REFERENCES curriculum(id) 
+        FOREIGN KEY (curriculum_id) REFERENCES curriculum(curriculum_id) 
         ON DELETE RESTRICT ON UPDATE CASCADE,
     CONSTRAINT fk_enrollment_academic_year 
-        FOREIGN KEY (academic_year_id) REFERENCES academic_years(id) 
+        FOREIGN KEY (academic_year_id) REFERENCES academic_years(academic_year_id) 
         ON DELETE RESTRICT ON UPDATE CASCADE,
     CONSTRAINT fk_enrollment_instructor 
-        FOREIGN KEY (instructor_id) REFERENCES instructors(id) 
+        FOREIGN KEY (instructor_id) REFERENCES instructors(instructor_id) 
         ON DELETE SET NULL ON UPDATE CASCADE,
     
     UNIQUE KEY uk_enrollment (student_id, curriculum_id, academic_year_id),
     INDEX idx_enrollment_status (enrollment_status),
     INDEX idx_enrollment_grade (grade_status),
-    INDEX idx_enrollment_instructor (instructor_id)
+    INDEX idx_enrollment_instructor (instructor_id),
+    INDEX idx_student_year (student_id, academic_year_id) COMMENT 'Composite index for student semester queries',
+    
+    -- Grade validation constraints (Philippine scale: 1.00-3.00 passing, 5.00 failed)
+    CONSTRAINT chk_midterm_grade CHECK (midterm_grade IS NULL OR midterm_grade BETWEEN 1.00 AND 5.00),
+    CONSTRAINT chk_final_grade CHECK (final_grade IS NULL OR final_grade BETWEEN 1.00 AND 5.00),
+    CONSTRAINT chk_grade CHECK (grade IS NULL OR grade BETWEEN 1.00 AND 5.00)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 COMMENT='Student course enrollments and grades';
 
@@ -369,7 +378,7 @@ COMMENT='Student course enrollments and grades';
 -- ============================================================
 DROP TABLE IF EXISTS class_schedules;
 CREATE TABLE class_schedules (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    schedule_id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     enrollment_id INT UNSIGNED NOT NULL,
     
     -- Schedule Details
@@ -392,11 +401,14 @@ CREATE TABLE class_schedules (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     
+    -- Ensure end time is after start time
+    CONSTRAINT chk_schedule_time CHECK (end_time > start_time),
+    
     CONSTRAINT fk_schedule_enrollment 
-        FOREIGN KEY (enrollment_id) REFERENCES enrollments(id) 
+        FOREIGN KEY (enrollment_id) REFERENCES enrollments(enrollment_id) 
         ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT fk_schedule_instructor 
-        FOREIGN KEY (instructor_id) REFERENCES instructors(id) 
+        FOREIGN KEY (instructor_id) REFERENCES instructors(instructor_id) 
         ON DELETE SET NULL ON UPDATE CASCADE,
     
     INDEX idx_schedule_day (day_of_week),
@@ -412,7 +424,7 @@ COMMENT='Weekly class schedules per enrollment';
 -- ============================================================
 DROP TABLE IF EXISTS payment_types;
 CREATE TABLE payment_types (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    payment_type_id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     type_code VARCHAR(20) NOT NULL UNIQUE,
     type_name VARCHAR(100) NOT NULL,
     description TEXT,
@@ -435,7 +447,7 @@ COMMENT='Fee types and categories';
 -- ============================================================
 DROP TABLE IF EXISTS users;
 CREATE TABLE users (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(50) NOT NULL UNIQUE,
     email VARCHAR(100) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL COMMENT 'bcrypt hashed password',
@@ -464,7 +476,7 @@ CREATE TABLE users (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     
     CONSTRAINT fk_user_department 
-        FOREIGN KEY (department_id) REFERENCES departments(id) 
+        FOREIGN KEY (department_id) REFERENCES departments(department_id) 
         ON DELETE SET NULL ON UPDATE CASCADE,
     
     INDEX idx_user_role (role),
@@ -479,7 +491,7 @@ COMMENT='System users and authentication';
 -- ============================================================
 DROP TABLE IF EXISTS payments;
 CREATE TABLE payments (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    payment_id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     student_id INT UNSIGNED NOT NULL,
     payment_type_id INT UNSIGNED,
     academic_year_id INT UNSIGNED NOT NULL,
@@ -505,16 +517,16 @@ CREATE TABLE payments (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     
     CONSTRAINT fk_payment_student 
-        FOREIGN KEY (student_id) REFERENCES students(id) 
+        FOREIGN KEY (student_id) REFERENCES students(student_id) 
         ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT fk_payment_type 
-        FOREIGN KEY (payment_type_id) REFERENCES payment_types(id) 
+        FOREIGN KEY (payment_type_id) REFERENCES payment_types(payment_type_id) 
         ON DELETE SET NULL ON UPDATE CASCADE,
     CONSTRAINT fk_payment_academic_year 
-        FOREIGN KEY (academic_year_id) REFERENCES academic_years(id) 
+        FOREIGN KEY (academic_year_id) REFERENCES academic_years(academic_year_id) 
         ON DELETE RESTRICT ON UPDATE CASCADE,
     CONSTRAINT fk_payment_processed_by 
-        FOREIGN KEY (processed_by) REFERENCES users(id) 
+        FOREIGN KEY (processed_by) REFERENCES users(user_id) 
         ON DELETE SET NULL ON UPDATE CASCADE,
     
     INDEX idx_payment_status (payment_status),
@@ -537,8 +549,8 @@ SET FOREIGN_KEY_CHECKS = 1;
 -- View: Current student enrollment summary
 CREATE OR REPLACE VIEW vw_student_enrollment_summary AS
 SELECT 
-    s.id AS student_id,
-    s.student_id AS student_number,
+    s.student_id,
+    s.student_number,
     CONCAT(s.last_name, ', ', s.first_name, ' ', IFNULL(s.middle_name, '')) AS full_name,
     p.program_code,
     p.program_name,
@@ -546,19 +558,19 @@ SELECT
     s.current_semester,
     s.section,
     s.student_status,
-    COUNT(e.id) AS enrolled_courses,
+    COUNT(e.enrollment_id) AS enrolled_courses,
     SUM(c.units) AS total_units
 FROM students s
-LEFT JOIN programs p ON s.current_program_id = p.id
-LEFT JOIN enrollments e ON s.id = e.student_id AND e.enrollment_status = 'Enrolled'
-LEFT JOIN curriculum c ON e.curriculum_id = c.id
-GROUP BY s.id;
+LEFT JOIN programs p ON s.current_program_id = p.program_id
+LEFT JOIN enrollments e ON s.student_id = e.student_id AND e.enrollment_status = 'Enrolled'
+LEFT JOIN curriculum c ON e.curriculum_id = c.curriculum_id
+GROUP BY s.student_id;
 
 -- View: Student balance summary
 CREATE OR REPLACE VIEW vw_student_balance AS
 SELECT 
-    s.id AS student_id,
-    s.student_id AS student_number,
+    s.student_id,
+    s.student_number,
     CONCAT(s.last_name, ', ', s.first_name) AS student_name,
     ay.academic_year,
     ay.semester,
@@ -566,14 +578,14 @@ SELECT
     SUM(p.amount_paid) AS total_paid,
     SUM(p.amount_due - p.amount_paid) AS total_balance
 FROM students s
-JOIN payments p ON s.id = p.student_id
-JOIN academic_years ay ON p.academic_year_id = ay.id
-GROUP BY s.id, ay.id;
+JOIN payments p ON s.student_id = p.student_id
+JOIN academic_years ay ON p.academic_year_id = ay.academic_year_id
+GROUP BY s.student_id, ay.academic_year_id;
 
 -- View: Curriculum overview
 CREATE OR REPLACE VIEW vw_curriculum_overview AS
 SELECT 
-    c.id AS curriculum_id,
+    c.curriculum_id AS curriculum_id,
     c.course_code,
     c.course_name,
     c.units,
@@ -584,16 +596,16 @@ SELECT
     p.program_name,
     d.department_name
 FROM curriculum c
-JOIN programs p ON c.program_id = p.id
-LEFT JOIN departments d ON p.department_id = d.id
+JOIN programs p ON c.program_id = p.program_id
+LEFT JOIN departments d ON p.department_id = d.department_id
 WHERE c.is_active = TRUE
 ORDER BY p.program_code, c.year_level, c.semester, c.course_code;
 
 -- View: Class schedule overview
 CREATE OR REPLACE VIEW vw_class_schedule AS
 SELECT 
-    cs.id AS schedule_id,
-    s.student_id AS student_number,
+    cs.schedule_id AS schedule_id,
+    s.student_number,
     CONCAT(s.last_name, ', ', s.first_name) AS student_name,
     c.course_code,
     c.course_name,
@@ -605,31 +617,31 @@ SELECT
     CONCAT(i.title, ' ', i.first_name, ' ', i.last_name) AS instructor_name,
     cs.class_type
 FROM class_schedules cs
-JOIN enrollments e ON cs.enrollment_id = e.id
-JOIN students s ON e.student_id = s.id
-JOIN curriculum c ON e.curriculum_id = c.id
-LEFT JOIN instructors i ON COALESCE(cs.instructor_id, e.instructor_id) = i.id
+JOIN enrollments e ON cs.enrollment_id = e.enrollment_id
+JOIN students s ON e.student_id = s.student_id
+JOIN curriculum c ON e.curriculum_id = c.curriculum_id
+LEFT JOIN instructors i ON COALESCE(cs.instructor_id, e.instructor_id) = i.instructor_id
 WHERE cs.is_active = TRUE
 ORDER BY s.last_name, cs.day_of_week, cs.start_time;
 
 -- View: Departments with program count
 CREATE OR REPLACE VIEW vw_departments AS
 SELECT 
-    d.id,
+    d.department_id,
     d.department_code,
     d.department_name,
     d.college,
     d.dean_name,
-    COUNT(p.id) AS program_count
+    COUNT(p.program_id) AS program_count
 FROM departments d
-LEFT JOIN programs p ON d.id = p.department_id
+LEFT JOIN programs p ON d.department_id = p.department_id
 WHERE d.is_active = TRUE
-GROUP BY d.id;
+GROUP BY d.department_id;
 
 -- View: Active payment types
 CREATE OR REPLACE VIEW vw_payment_types AS
 SELECT 
-    id,
+    payment_type_id,
     type_code,
     type_name,
     description,
@@ -642,8 +654,8 @@ WHERE is_active = TRUE;
 -- View: Student program history
 CREATE OR REPLACE VIEW vw_student_program_history AS
 SELECT 
-    sp.id,
-    s.student_id AS student_number,
+    sp.student_program_id,
+    s.student_number,
     CONCAT(s.last_name, ', ', s.first_name) AS student_name,
     p.program_code,
     p.program_name,
@@ -653,9 +665,9 @@ SELECT
     sp.effective_date,
     sp.remarks
 FROM student_programs sp
-JOIN students s ON sp.student_id = s.id
-JOIN programs p ON sp.program_id = p.id
-JOIN academic_years ay ON sp.academic_year_id = ay.id;
+JOIN students s ON sp.student_id = s.student_id
+JOIN programs p ON sp.program_id = p.program_id
+JOIN academic_years ay ON sp.academic_year_id = ay.academic_year_id;
 
 -- ============================================================
 -- TRIGGERS: Automatic data management
@@ -664,30 +676,38 @@ JOIN academic_years ay ON sp.academic_year_id = ay.id;
 DELIMITER //
 
 -- Trigger: Auto-update payment status before insert
+-- Priority: Paid > Overdue > Partial > Unpaid
 CREATE TRIGGER trg_payment_before_insert
 BEFORE INSERT ON payments
 FOR EACH ROW
 BEGIN
     IF NEW.amount_paid >= NEW.amount_due THEN
         SET NEW.payment_status = 'Paid';
+    ELSEIF NEW.due_date IS NOT NULL AND NEW.due_date < CURDATE() AND NEW.amount_paid < NEW.amount_due THEN
+        -- Check overdue BEFORE partial (past due date with any unpaid balance = overdue)
+        SET NEW.payment_status = 'Overdue';
     ELSEIF NEW.amount_paid > 0 AND NEW.amount_paid < NEW.amount_due THEN
         SET NEW.payment_status = 'Partial';
-    ELSEIF NEW.due_date IS NOT NULL AND NEW.due_date < CURDATE() AND NEW.amount_paid < NEW.amount_due THEN
-        SET NEW.payment_status = 'Overdue';
+    ELSE
+        SET NEW.payment_status = 'Unpaid';
     END IF;
 END//
 
 -- Trigger: Auto-update payment status before update
+-- Priority: Paid > Overdue > Partial > Unpaid
 CREATE TRIGGER trg_payment_before_update
 BEFORE UPDATE ON payments
 FOR EACH ROW
 BEGIN
     IF NEW.amount_paid >= NEW.amount_due THEN
         SET NEW.payment_status = 'Paid';
+    ELSEIF NEW.due_date IS NOT NULL AND NEW.due_date < CURDATE() AND NEW.amount_paid < NEW.amount_due THEN
+        -- Check overdue BEFORE partial (past due date with any unpaid balance = overdue)
+        SET NEW.payment_status = 'Overdue';
     ELSEIF NEW.amount_paid > 0 AND NEW.amount_paid < NEW.amount_due THEN
         SET NEW.payment_status = 'Partial';
-    ELSEIF NEW.due_date IS NOT NULL AND NEW.due_date < CURDATE() AND NEW.amount_paid < NEW.amount_due THEN
-        SET NEW.payment_status = 'Overdue';
+    ELSE
+        SET NEW.payment_status = 'Unpaid';
     END IF;
 END//
 
@@ -724,16 +744,16 @@ BEGIN
         p.program_name,
         d.department_name
     FROM students s
-    LEFT JOIN programs p ON s.current_program_id = p.id
-    LEFT JOIN departments d ON p.department_id = d.id
-    WHERE s.id = p_student_id;
+    LEFT JOIN programs p ON s.current_program_id = p.program_id
+    LEFT JOIN departments d ON p.department_id = d.department_id
+    WHERE s.student_id = p_student_id;
 END//
 
 -- Procedure: Get student current enrollments
 CREATE PROCEDURE sp_get_student_enrollments(IN p_student_id INT)
 BEGIN
     SELECT 
-        e.id AS enrollment_id,
+        e.enrollment_id AS enrollment_id,
         c.course_code,
         c.course_name,
         c.units,
@@ -744,9 +764,9 @@ BEGIN
         e.grade_status,
         CONCAT(i.title, ' ', i.first_name, ' ', i.last_name) AS instructor
     FROM enrollments e
-    JOIN curriculum c ON e.curriculum_id = c.id
-    JOIN academic_years ay ON e.academic_year_id = ay.id
-    LEFT JOIN instructors i ON e.instructor_id = i.id
+    JOIN curriculum c ON e.curriculum_id = c.curriculum_id
+    JOIN academic_years ay ON e.academic_year_id = ay.academic_year_id
+    LEFT JOIN instructors i ON e.instructor_id = i.instructor_id
     WHERE e.student_id = p_student_id
     ORDER BY ay.academic_year DESC, ay.semester DESC, c.course_code;
 END//
@@ -764,9 +784,9 @@ BEGIN
         CONCAT(IFNULL(i.title, ''), ' ', i.first_name, ' ', i.last_name) AS instructor,
         cs.class_type
     FROM class_schedules cs
-    JOIN enrollments e ON cs.enrollment_id = e.id
-    JOIN curriculum c ON e.curriculum_id = c.id
-    LEFT JOIN instructors i ON COALESCE(cs.instructor_id, e.instructor_id) = i.id
+    JOIN enrollments e ON cs.enrollment_id = e.enrollment_id
+    JOIN curriculum c ON e.curriculum_id = c.curriculum_id
+    LEFT JOIN instructors i ON COALESCE(cs.instructor_id, e.instructor_id) = i.instructor_id
     WHERE e.student_id = p_student_id
       AND cs.is_active = TRUE
       AND e.enrollment_status = 'Enrolled'
@@ -790,17 +810,117 @@ BEGIN
         p.payment_method,
         p.reference_number
     FROM payments p
-    JOIN academic_years ay ON p.academic_year_id = ay.id
-    LEFT JOIN payment_types pt ON p.payment_type_id = pt.id
+    JOIN academic_years ay ON p.academic_year_id = ay.academic_year_id
+    LEFT JOIN payment_types pt ON p.payment_type_id = pt.payment_type_id
     WHERE p.student_id = p_student_id
     ORDER BY ay.academic_year DESC, ay.semester DESC, pt.type_name;
+END//
+
+-- ============================================================
+-- PROCEDURE: Update Overdue Payment Statuses
+-- Run this daily (via cron/scheduled task) or on-demand
+-- to mark past-due payments as 'Overdue'
+-- ============================================================
+CREATE PROCEDURE sp_update_overdue_payments()
+BEGIN
+    DECLARE v_updated INT DEFAULT 0;
+    
+    -- Update payments that are past due date and not fully paid
+    -- Excludes: Paid, Refunded, Waived
+    UPDATE payments
+    SET payment_status = 'Overdue',
+        updated_at = CURRENT_TIMESTAMP
+    WHERE due_date IS NOT NULL
+      AND due_date < CURDATE()
+      AND amount_paid < amount_due
+      AND payment_status IN ('Unpaid', 'Partial');
+    
+    SET v_updated = ROW_COUNT();
+    
+    SELECT v_updated AS payments_marked_overdue,
+           CURDATE() AS checked_date;
+END//
+
+-- ============================================================
+-- PROCEDURE: Get Payment Summary Statistics
+-- Returns payment stats for dashboard/reports
+-- ============================================================
+CREATE PROCEDURE sp_get_payment_stats(
+    IN p_academic_year_id INT UNSIGNED
+)
+BEGIN
+    SELECT 
+        payment_status,
+        COUNT(*) AS payment_count,
+        SUM(amount_due) AS total_due,
+        SUM(amount_paid) AS total_paid,
+        SUM(amount_due - amount_paid) AS total_balance
+    FROM payments
+    WHERE (p_academic_year_id IS NULL OR academic_year_id = p_academic_year_id)
+    GROUP BY payment_status
+    ORDER BY FIELD(payment_status, 'Paid', 'Partial', 'Unpaid', 'Overdue', 'Refunded', 'Waived');
+END//
+
+-- ============================================================
+-- PROCEDURE: Record Payment Transaction
+-- Centralized payment recording with validation
+-- ============================================================
+CREATE PROCEDURE sp_record_payment(
+    IN p_student_id INT UNSIGNED,
+    IN p_payment_type_id INT UNSIGNED,
+    IN p_academic_year_id INT UNSIGNED,
+    IN p_amount_due DECIMAL(12,2),
+    IN p_amount_paid DECIMAL(12,2),
+    IN p_payment_date DATE,
+    IN p_due_date DATE,
+    IN p_payment_method VARCHAR(50),
+    IN p_reference_number VARCHAR(100),
+    IN p_processed_by INT UNSIGNED,
+    IN p_description VARCHAR(255),
+    IN p_remarks TEXT
+)
+BEGIN
+    DECLARE v_payment_id INT UNSIGNED;
+    
+    -- Validate student exists
+    IF NOT EXISTS (SELECT 1 FROM students WHERE student_id = p_student_id) THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Student not found';
+    END IF;
+    
+    -- Validate academic year exists
+    IF NOT EXISTS (SELECT 1 FROM academic_years WHERE academic_year_id = p_academic_year_id) THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Academic year not found';
+    END IF;
+    
+    -- Validate payment type if provided
+    IF p_payment_type_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM payment_types WHERE payment_type_id = p_payment_type_id) THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Payment type not found';
+    END IF;
+    
+    -- Insert payment record (trigger will handle status)
+    INSERT INTO payments (
+        student_id, payment_type_id, academic_year_id,
+        description, amount_due, amount_paid,
+        payment_date, due_date, payment_method,
+        reference_number, processed_by, remarks
+    ) VALUES (
+        p_student_id, p_payment_type_id, p_academic_year_id,
+        p_description, p_amount_due, p_amount_paid,
+        p_payment_date, p_due_date, p_payment_method,
+        p_reference_number, p_processed_by, p_remarks
+    );
+    
+    SET v_payment_id = LAST_INSERT_ID();
+    
+    SELECT v_payment_id AS payment_id, 
+           'Payment recorded successfully' AS message;
 END//
 
 -- Procedure: Get student program history
 CREATE PROCEDURE sp_get_student_programs(IN p_student_id INT)
 BEGIN
     SELECT 
-        sp.id,
+        sp.student_program_id,
         p.program_code,
         p.program_name,
         d.department_name,
@@ -811,9 +931,9 @@ BEGIN
         sp.remarks,
         sp.created_at
     FROM student_programs sp
-    JOIN programs p ON sp.program_id = p.id
-    JOIN academic_years ay ON sp.academic_year_id = ay.id
-    LEFT JOIN departments d ON p.department_id = d.id
+    JOIN programs p ON sp.program_id = p.program_id
+    JOIN academic_years ay ON sp.academic_year_id = ay.academic_year_id
+    LEFT JOIN departments d ON p.department_id = d.department_id
     WHERE sp.student_id = p_student_id
     ORDER BY sp.effective_date DESC;
 END//
@@ -822,7 +942,7 @@ END//
 CREATE PROCEDURE sp_get_users()
 BEGIN
     SELECT 
-        u.id,
+        u.user_id,
         u.username,
         u.email,
         u.full_name,
@@ -833,7 +953,7 @@ BEGIN
         u.last_login,
         u.created_at
     FROM users u
-    LEFT JOIN departments d ON u.department_id = d.id
+    LEFT JOIN departments d ON u.department_id = d.department_id
     ORDER BY u.role, u.username;
 END//
 
@@ -846,27 +966,27 @@ DELIMITER ;
 -- View: Instructor workload (classes per instructor)
 CREATE OR REPLACE VIEW vw_instructor_workload AS
 SELECT 
-    i.id AS instructor_id,
+    i.instructor_id AS instructor_id,
     i.employee_id,
     CONCAT(IFNULL(i.title, ''), ' ', i.first_name, ' ', i.last_name) AS instructor_name,
     d.department_name,
     i.position,
-    COUNT(DISTINCT e.id) AS total_classes,
+    COUNT(DISTINCT e.enrollment_id) AS total_classes,
     COUNT(DISTINCT e.student_id) AS total_students,
     SUM(c.units) AS total_units_handled
 FROM instructors i
-LEFT JOIN departments d ON i.department_id = d.id
-LEFT JOIN enrollments e ON i.id = e.instructor_id AND e.enrollment_status = 'Enrolled'
-LEFT JOIN curriculum c ON e.curriculum_id = c.id
+LEFT JOIN departments d ON i.department_id = d.department_id
+LEFT JOIN enrollments e ON i.instructor_id = e.instructor_id AND e.enrollment_status = 'Enrolled'
+LEFT JOIN curriculum c ON e.curriculum_id = c.curriculum_id
 WHERE i.is_active = TRUE
-GROUP BY i.id
+GROUP BY i.instructor_id
 ORDER BY total_classes DESC;
 
 -- View: Enrollment grades (quick grade lookup)
 CREATE OR REPLACE VIEW vw_enrollment_grades AS
 SELECT 
-    e.id AS enrollment_id,
-    s.student_id AS student_number,
+    e.enrollment_id AS enrollment_id,
+    s.student_number,
     CONCAT(s.last_name, ', ', s.first_name) AS student_name,
     p.program_code,
     c.course_code,
@@ -880,18 +1000,18 @@ SELECT
     e.grade_status,
     CONCAT(IFNULL(i.title, ''), ' ', i.first_name, ' ', i.last_name) AS instructor_name
 FROM enrollments e
-JOIN students s ON e.student_id = s.id
-JOIN curriculum c ON e.curriculum_id = c.id
-JOIN academic_years ay ON e.academic_year_id = ay.id
-LEFT JOIN programs p ON s.current_program_id = p.id
-LEFT JOIN instructors i ON e.instructor_id = i.id
+JOIN students s ON e.student_id = s.student_id
+JOIN curriculum c ON e.curriculum_id = c.curriculum_id
+JOIN academic_years ay ON e.academic_year_id = ay.academic_year_id
+LEFT JOIN programs p ON s.current_program_id = p.program_id
+LEFT JOIN instructors i ON e.instructor_id = i.instructor_id
 ORDER BY ay.academic_year DESC, s.last_name, c.course_code;
 
 -- View: Student full profile (all info + program + balance)
 CREATE OR REPLACE VIEW vw_student_full_profile AS
 SELECT 
-    s.id,
-    s.student_id AS student_number,
+    s.student_id,
+    s.student_number,
     CONCAT(s.last_name, ', ', s.first_name, ' ', IFNULL(s.middle_name, '')) AS full_name,
     s.first_name,
     s.middle_name,
@@ -913,18 +1033,18 @@ SELECT
     s.scholarship_status,
     s.emergency_contact_name,
     s.emergency_contact_phone,
-    (SELECT COUNT(*) FROM enrollments e WHERE e.student_id = s.id AND e.enrollment_status = 'Enrolled') AS enrolled_courses,
-    (SELECT SUM(cu.units) FROM enrollments e JOIN curriculum cu ON e.curriculum_id = cu.id WHERE e.student_id = s.id AND e.enrollment_status = 'Enrolled') AS total_units,
-    (SELECT SUM(amount_due - amount_paid) FROM payments WHERE student_id = s.id) AS total_balance
+    (SELECT COUNT(*) FROM enrollments e WHERE e.student_id = s.student_id AND e.enrollment_status = 'Enrolled') AS enrolled_courses,
+    (SELECT SUM(cu.units) FROM enrollments e JOIN curriculum cu ON e.curriculum_id = cu.curriculum_id WHERE e.student_id = s.student_id AND e.enrollment_status = 'Enrolled') AS total_units,
+    (SELECT SUM(amount_due - amount_paid) FROM payments WHERE student_id = s.student_id) AS total_balance
 FROM students s
-LEFT JOIN programs p ON s.current_program_id = p.id
-LEFT JOIN departments d ON p.department_id = d.id;
+LEFT JOIN programs p ON s.current_program_id = p.program_id
+LEFT JOIN departments d ON p.department_id = d.department_id;
 
 -- View: Active enrollments (current term only)
 CREATE OR REPLACE VIEW vw_active_enrollments AS
 SELECT 
-    e.id AS enrollment_id,
-    s.student_id AS student_number,
+    e.enrollment_id AS enrollment_id,
+    s.student_number,
     CONCAT(s.last_name, ', ', s.first_name) AS student_name,
     p.program_code,
     s.year_level,
@@ -937,11 +1057,11 @@ SELECT
     e.enrollment_date,
     CONCAT(IFNULL(i.title, ''), ' ', i.first_name, ' ', i.last_name) AS instructor_name
 FROM enrollments e
-JOIN students s ON e.student_id = s.id
-JOIN curriculum c ON e.curriculum_id = c.id
-JOIN academic_years ay ON e.academic_year_id = ay.id
-LEFT JOIN programs p ON s.current_program_id = p.id
-LEFT JOIN instructors i ON e.instructor_id = i.id
+JOIN students s ON e.student_id = s.student_id
+JOIN curriculum c ON e.curriculum_id = c.curriculum_id
+JOIN academic_years ay ON e.academic_year_id = ay.academic_year_id
+LEFT JOIN programs p ON s.current_program_id = p.program_id
+LEFT JOIN instructors i ON e.instructor_id = i.instructor_id
 WHERE e.enrollment_status = 'Enrolled'
   AND ay.is_current = TRUE
 ORDER BY s.last_name, c.course_code;
@@ -966,8 +1086,8 @@ BEGIN
     SET p_offset = IFNULL(p_offset, 0);
     
     SELECT 
-        s.id,
-        s.student_id AS student_number,
+        s.student_id,
+        s.student_number,
         CONCAT(s.last_name, ', ', s.first_name, ' ', IFNULL(s.middle_name, '')) AS full_name,
         s.email,
         p.program_code,
@@ -976,7 +1096,7 @@ BEGIN
         s.student_status,
         s.created_at
     FROM students s
-    LEFT JOIN programs p ON s.current_program_id = p.id
+    LEFT JOIN programs p ON s.current_program_id = p.program_id
     WHERE (p_search IS NULL OR p_search = '' OR 
            s.student_id LIKE CONCAT('%', p_search, '%') OR
            s.first_name LIKE CONCAT('%', p_search, '%') OR
@@ -996,7 +1116,7 @@ CREATE PROCEDURE sp_get_course_roster(
 )
 BEGIN
     SELECT 
-        s.student_id AS student_number,
+        s.student_number,
         CONCAT(s.last_name, ', ', s.first_name) AS student_name,
         p.program_code,
         s.year_level,
@@ -1005,9 +1125,9 @@ BEGIN
         e.grade_status,
         CONCAT(IFNULL(i.title, ''), ' ', i.first_name, ' ', i.last_name) AS instructor_name
     FROM enrollments e
-    JOIN students s ON e.student_id = s.id
-    LEFT JOIN programs p ON s.current_program_id = p.id
-    LEFT JOIN instructors i ON e.instructor_id = i.id
+    JOIN students s ON e.student_id = s.student_id
+    LEFT JOIN programs p ON s.current_program_id = p.program_id
+    LEFT JOIN instructors i ON e.instructor_id = i.instructor_id
     WHERE e.curriculum_id = p_curriculum_id
       AND (p_academic_year_id IS NULL OR e.academic_year_id = p_academic_year_id)
       AND e.enrollment_status = 'Enrolled'
@@ -1028,12 +1148,12 @@ BEGIN
         cs.class_type,
         COUNT(DISTINCT e.student_id) AS student_count
     FROM class_schedules cs
-    JOIN enrollments e ON cs.enrollment_id = e.id
-    JOIN curriculum c ON e.curriculum_id = c.id
+    JOIN enrollments e ON cs.enrollment_id = e.enrollment_id
+    JOIN curriculum c ON e.curriculum_id = c.curriculum_id
     WHERE (cs.instructor_id = p_instructor_id OR e.instructor_id = p_instructor_id)
       AND cs.is_active = TRUE
       AND e.enrollment_status = 'Enrolled'
-    GROUP BY c.id, cs.day_of_week, cs.start_time, cs.end_time, cs.room, cs.building, cs.class_type
+    GROUP BY c.curriculum_id, cs.day_of_week, cs.start_time, cs.end_time, cs.room, cs.building, cs.class_type
     ORDER BY FIELD(cs.day_of_week, 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'),
              cs.start_time;
 END//
@@ -1064,32 +1184,32 @@ BEGIN
     -- Check for orphan enrollments (no student)
     SELECT 'Orphan Enrollments (no student)' AS check_type, COUNT(*) AS count
     FROM enrollments e
-    LEFT JOIN students s ON e.student_id = s.id
-    WHERE s.id IS NULL
+    LEFT JOIN students s ON e.student_id = s.student_id
+    WHERE s.student_id IS NULL
     
     UNION ALL
     
     -- Check for orphan enrollments (no curriculum)
     SELECT 'Orphan Enrollments (no curriculum)', COUNT(*)
     FROM enrollments e
-    LEFT JOIN curriculum c ON e.curriculum_id = c.id
-    WHERE c.id IS NULL
+    LEFT JOIN curriculum c ON e.curriculum_id = c.curriculum_id
+    WHERE c.curriculum_id IS NULL
     
     UNION ALL
     
     -- Check for orphan schedules (no enrollment)
     SELECT 'Orphan Schedules (no enrollment)', COUNT(*)
     FROM class_schedules cs
-    LEFT JOIN enrollments e ON cs.enrollment_id = e.id
-    WHERE e.id IS NULL
+    LEFT JOIN enrollments e ON cs.enrollment_id = e.enrollment_id
+    WHERE e.enrollment_id IS NULL
     
     UNION ALL
     
     -- Check for orphan payments (no student)
     SELECT 'Orphan Payments (no student)', COUNT(*)
     FROM payments p
-    LEFT JOIN students s ON p.student_id = s.id
-    WHERE s.id IS NULL
+    LEFT JOIN students s ON p.student_id = s.student_id
+    WHERE s.student_id IS NULL
     
     UNION ALL
     
@@ -1103,7 +1223,7 @@ BEGIN
     -- Check for enrollments without grades (past terms)
     SELECT 'Enrollments pending grades', COUNT(*)
     FROM enrollments e
-    JOIN academic_years ay ON e.academic_year_id = ay.id
+    JOIN academic_years ay ON e.academic_year_id = ay.academic_year_id
     WHERE e.grade IS NULL 
       AND e.enrollment_status = 'Enrolled'
       AND ay.status = 'Completed'
@@ -1133,8 +1253,295 @@ BEGIN
     UNION ALL SELECT 'users', COUNT(*) FROM users;
 END//
 
+-- Procedure: Validate prerequisites before enrollment
+-- Handles single prerequisite (first one if comma-separated)
+CREATE PROCEDURE sp_validate_prerequisites(
+    IN p_student_id INT UNSIGNED,
+    IN p_curriculum_id INT UNSIGNED,
+    OUT p_can_enroll BOOLEAN,
+    OUT p_message VARCHAR(255)
+)
+BEGIN
+    DECLARE v_prereq_string VARCHAR(255);
+    DECLARE v_first_prereq VARCHAR(20);
+    DECLARE v_prereq_id INT UNSIGNED;
+    DECLARE v_program_id INT UNSIGNED;
+    DECLARE v_passed_count INT DEFAULT 0;
+    DECLARE v_total_prereqs INT DEFAULT 0;
+    DECLARE v_passed_prereqs INT DEFAULT 0;
+    
+    -- Get prerequisites and program_id for the course
+    SELECT prerequisites, program_id INTO v_prereq_string, v_program_id
+    FROM curriculum
+    WHERE curriculum_id = p_curriculum_id;
+    
+    -- If no prerequisite, allow enrollment
+    IF v_prereq_string IS NULL OR v_prereq_string = '' THEN
+        SET p_can_enroll = TRUE;
+        SET p_message = 'No prerequisite required';
+    ELSE
+        -- Get first prerequisite (handles comma-separated by taking first one)
+        SET v_first_prereq = TRIM(SUBSTRING_INDEX(v_prereq_string, ',', 1));
+        
+        -- Count total prerequisites
+        SET v_total_prereqs = LENGTH(v_prereq_string) - LENGTH(REPLACE(v_prereq_string, ',', '')) + 1;
+        
+        -- Check if student passed all prerequisites
+        SELECT COUNT(*) INTO v_passed_prereqs
+        FROM enrollments e
+        JOIN curriculum c ON e.curriculum_id = c.curriculum_id
+        WHERE e.student_id = p_student_id
+          AND e.grade_status = 'Passed'
+          AND c.program_id = v_program_id
+          AND FIND_IN_SET(c.course_code, REPLACE(v_prereq_string, ' ', '')) > 0;
+        
+        IF v_passed_prereqs >= v_total_prereqs THEN
+            SET p_can_enroll = TRUE;
+            SET p_message = CONCAT('All prerequisites (', v_prereq_string, ') completed');
+        ELSE
+            SET p_can_enroll = FALSE;
+            SET p_message = CONCAT('Prerequisite not met: Must pass ', v_prereq_string, ' first (', v_passed_prereqs, '/', v_total_prereqs, ' completed)');
+        END IF;
+    END IF;
+END//
+
+-- Procedure: Enroll student with prerequisite check
+CREATE PROCEDURE sp_enroll_student_with_validation(
+    IN p_student_id INT UNSIGNED,
+    IN p_curriculum_id INT UNSIGNED,
+    IN p_academic_year_id INT UNSIGNED,
+    IN p_enrollment_date DATE,
+    IN p_instructor_id INT UNSIGNED,
+    OUT p_success BOOLEAN,
+    OUT p_message VARCHAR(255)
+)
+BEGIN
+    DECLARE v_can_enroll BOOLEAN;
+    DECLARE v_prereq_message VARCHAR(255);
+    DECLARE v_exists INT DEFAULT 0;
+    
+    -- Check if already enrolled
+    SELECT COUNT(*) INTO v_exists
+    FROM enrollments
+    WHERE student_id = p_student_id
+      AND curriculum_id = p_curriculum_id
+      AND academic_year_id = p_academic_year_id;
+    
+    IF v_exists > 0 THEN
+        SET p_success = FALSE;
+        SET p_message = 'Student already enrolled in this course for this term';
+    ELSE
+        -- Validate prerequisites
+        CALL sp_validate_prerequisites(p_student_id, p_curriculum_id, v_can_enroll, v_prereq_message);
+        
+        IF v_can_enroll THEN
+            INSERT INTO enrollments (student_id, curriculum_id, academic_year_id, enrollment_date, instructor_id)
+            VALUES (p_student_id, p_curriculum_id, p_academic_year_id, p_enrollment_date, p_instructor_id);
+            
+            SET p_success = TRUE;
+            SET p_message = CONCAT('Enrollment successful. ', v_prereq_message);
+        ELSE
+            SET p_success = FALSE;
+            SET p_message = v_prereq_message;
+        END IF;
+    END IF;
+END//
+
 DELIMITER ;
 
 -- ============================================================
--- End of Schema v2.1.0
+-- TABLE: grade_scale (Reference Table)
+-- Philippine Grading System Documentation
+-- ============================================================
+DROP TABLE IF EXISTS grade_scale;
+CREATE TABLE grade_scale (
+    grade_scale_id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    grade_value DECIMAL(3,2) NOT NULL UNIQUE,
+    grade_equivalent VARCHAR(20) NOT NULL,
+    description VARCHAR(100) NOT NULL,
+    grade_point DECIMAL(3,2) NOT NULL COMMENT 'For GPA calculation',
+    is_passing BOOLEAN NOT NULL DEFAULT TRUE,
+    
+    INDEX idx_grade_value (grade_value)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='Philippine grade scale reference';
+
+-- Insert grade scale values
+INSERT INTO grade_scale (grade_value, grade_equivalent, description, grade_point, is_passing) VALUES
+(1.00, '1.00', 'Excellent', 4.00, TRUE),
+(1.25, '1.25', 'Very Good', 3.75, TRUE),
+(1.50, '1.50', 'Very Good', 3.50, TRUE),
+(1.75, '1.75', 'Good', 3.25, TRUE),
+(2.00, '2.00', 'Good', 3.00, TRUE),
+(2.25, '2.25', 'Satisfactory', 2.75, TRUE),
+(2.50, '2.50', 'Satisfactory', 2.50, TRUE),
+(2.75, '2.75', 'Fair', 2.25, TRUE),
+(3.00, '3.00', 'Passing', 2.00, TRUE),
+(5.00, '5.00', 'Failed', 0.00, FALSE);
+
+-- ============================================================
+-- TABLE: audit_log
+-- Track important data changes
+-- ============================================================
+DROP TABLE IF EXISTS audit_log;
+CREATE TABLE audit_log (
+    audit_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    table_name VARCHAR(64) NOT NULL,
+    record_id INT UNSIGNED NOT NULL,
+    action ENUM('INSERT', 'UPDATE', 'DELETE') NOT NULL,
+    old_values JSON,
+    new_values JSON,
+    changed_by INT UNSIGNED COMMENT 'User ID who made the change',
+    changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    ip_address VARCHAR(45),
+    user_agent VARCHAR(255),
+    
+    INDEX idx_audit_table (table_name),
+    INDEX idx_audit_record (table_name, record_id),
+    INDEX idx_audit_action (action),
+    INDEX idx_audit_time (changed_at),
+    INDEX idx_audit_user (changed_by)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='Audit trail for data changes';
+
+-- ============================================================
+-- FUNCTION: Calculate Student GPA
+-- ============================================================
+DELIMITER //
+
+CREATE FUNCTION fn_calculate_gpa(
+    p_student_id INT UNSIGNED,
+    p_academic_year_id INT UNSIGNED
+) RETURNS DECIMAL(4,3)
+DETERMINISTIC
+READS SQL DATA
+BEGIN
+    DECLARE v_gpa DECIMAL(4,3);
+    
+    SELECT 
+        ROUND(SUM(gs.grade_point * c.units) / NULLIF(SUM(c.units), 0), 3)
+    INTO v_gpa
+    FROM enrollments e
+    JOIN curriculum c ON e.curriculum_id = c.curriculum_id
+    JOIN grade_scale gs ON e.grade = gs.grade_value
+    WHERE e.student_id = p_student_id
+      AND (p_academic_year_id IS NULL OR e.academic_year_id = p_academic_year_id)
+      AND e.grade IS NOT NULL
+      AND e.grade_status IN ('Passed', 'Failed');
+    
+    RETURN COALESCE(v_gpa, 0.000);
+END//
+
+-- ============================================================
+-- FUNCTION: Calculate Cumulative GPA (All Semesters)
+-- ============================================================
+CREATE FUNCTION fn_calculate_cumulative_gpa(
+    p_student_id INT UNSIGNED
+) RETURNS DECIMAL(4,3)
+DETERMINISTIC
+READS SQL DATA
+BEGIN
+    RETURN fn_calculate_gpa(p_student_id, NULL);
+END//
+
+-- ============================================================
+-- PROCEDURE: Check Schedule Conflicts
+-- ============================================================
+CREATE PROCEDURE sp_check_schedule_conflict(
+    IN p_student_id INT UNSIGNED,
+    IN p_academic_year_id INT UNSIGNED,
+    IN p_day_of_week VARCHAR(10),
+    IN p_start_time TIME,
+    IN p_end_time TIME,
+    OUT p_has_conflict BOOLEAN,
+    OUT p_conflict_details VARCHAR(500)
+)
+BEGIN
+    DECLARE v_conflicts TEXT DEFAULT '';
+    
+    SELECT GROUP_CONCAT(
+        CONCAT(cur.course_code, ' (', cs.start_time, '-', cs.end_time, ' in ', COALESCE(cs.room, 'TBA'), ')')
+        SEPARATOR ', '
+    ) INTO v_conflicts
+    FROM class_schedules cs
+    JOIN enrollments e ON cs.enrollment_id = e.enrollment_id
+    JOIN curriculum cur ON e.curriculum_id = cur.curriculum_id
+    WHERE e.student_id = p_student_id
+      AND e.academic_year_id = p_academic_year_id
+      AND e.enrollment_status = 'Enrolled'
+      AND cs.day_of_week = p_day_of_week
+      AND cs.is_active = TRUE
+      AND (
+          (p_start_time >= cs.start_time AND p_start_time < cs.end_time) OR
+          (p_end_time > cs.start_time AND p_end_time <= cs.end_time) OR
+          (p_start_time <= cs.start_time AND p_end_time >= cs.end_time)
+      );
+    
+    IF v_conflicts IS NOT NULL AND v_conflicts != '' THEN
+        SET p_has_conflict = TRUE;
+        SET p_conflict_details = CONCAT('Conflicts with: ', v_conflicts);
+    ELSE
+        SET p_has_conflict = FALSE;
+        SET p_conflict_details = 'No conflicts';
+    END IF;
+END//
+
+-- ============================================================
+-- PROCEDURE: Log Audit Entry
+-- ============================================================
+CREATE PROCEDURE sp_log_audit(
+    IN p_table_name VARCHAR(64),
+    IN p_record_id INT UNSIGNED,
+    IN p_action VARCHAR(10),
+    IN p_old_values JSON,
+    IN p_new_values JSON,
+    IN p_user_id INT UNSIGNED
+)
+BEGIN
+    INSERT INTO audit_log (table_name, record_id, action, old_values, new_values, changed_by)
+    VALUES (p_table_name, p_record_id, p_action, p_old_values, p_new_values, p_user_id);
+END//
+
+-- ============================================================
+-- PROCEDURE: Set Current Academic Year (ensures only one is current)
+-- ============================================================
+CREATE PROCEDURE sp_set_current_academic_year(
+    IN p_academic_year_id INT UNSIGNED
+)
+BEGIN
+    -- First, set all academic years to not current
+    UPDATE academic_years SET is_current = FALSE WHERE is_current = TRUE;
+    
+    -- Then set the specified academic year as current
+    UPDATE academic_years SET is_current = TRUE WHERE academic_year_id = p_academic_year_id;
+    
+    SELECT CONCAT('Academic year ID ', p_academic_year_id, ' is now the current term.') AS result;
+END//
+
+-- ============================================================
+-- VIEW: Student GPA Summary
+-- ============================================================
+DELIMITER ;
+
+CREATE OR REPLACE VIEW vw_student_gpa AS
+SELECT 
+    s.student_id,
+    s.student_number,
+    CONCAT(s.last_name, ', ', s.first_name, ' ', COALESCE(s.middle_name, '')) AS student_name,
+    p.program_code,
+    s.year_level,
+    fn_calculate_cumulative_gpa(s.student_id) AS cumulative_gpa,
+    CASE 
+        WHEN fn_calculate_cumulative_gpa(s.student_id) >= 3.50 THEN 'Dean''s Lister'
+        WHEN fn_calculate_cumulative_gpa(s.student_id) >= 3.00 THEN 'Honor Student'
+        WHEN fn_calculate_cumulative_gpa(s.student_id) >= 2.00 THEN 'Good Standing'
+        WHEN fn_calculate_cumulative_gpa(s.student_id) > 0 THEN 'Needs Improvement'
+        ELSE 'No Grades Yet'
+    END AS academic_standing
+FROM students s
+LEFT JOIN programs p ON s.current_program_id = p.program_id
+WHERE s.student_status = 'Active';
+
+-- ============================================================
+-- End of Schema v2.2.0 (100% Complete)
 -- ============================================================

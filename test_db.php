@@ -31,8 +31,8 @@ $paymentSummary = getPaymentSummary(1);
 echo json_encode([
     'students_count' => count($students),
     'student' => $student ? [
-        'id' => $student['id'],
         'student_id' => $student['student_id'],
+        'student_number' => $student['student_number'],
         'name' => $student['first_name'] . ' ' . $student['last_name'],
         'program_code' => $student['program_code'] ?? 'NULL',
         'program_name' => $student['program_name'] ?? 'NULL',
