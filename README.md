@@ -1,109 +1,141 @@
-# EMS Pro - Student Information System
+# 📚 EMS - Enrollment Management System
 
-A simple Enrollment Management System built with PHP, MySQL, CSS, and JavaScript. Features a desktop application-style interface with comprehensive student management.
+A comprehensive Enrollment Management System built with PHP, MySQL, and modern web technologies. Features a desktop application-style interface for managing student enrollment, academic records, payments, and scheduling.
 
-## Features
+**Version:** 2.3.0  
+**Database:** MySQL 8.0+ / MariaDB 10.5+
 
-### Core Features
-- **Student Management**: Complete student profiling with bio-data capture
-- **Class Schedule**: Visual timetable and list view for student class schedules
-- **Enrollment History**: Track student enrollments across semesters with grades
-- **Payment Tracking**: Full payment history with multiple payment methods
-- **Secure Login**: Bcrypt password hashing with session management
-- **Desktop UI**: Modern sidebar navigation with collapsible menu
+---
 
-### Student Profile
-- Personal Information (Name, DOB, Sex, Civil Status, Nationality)
-- Contact Details (Email, Phone)
-- Complete Address (Street, Barangay, City, Province, ZIP)
-- Guardian/Emergency Contact Information
-- Academic Information (Program, Year Level, Section)
+## ✨ Features
 
-### Class Schedule (NEW!)
-- **Timetable View**: Visual weekly calendar with color-coded class types
-- **List View**: Day-by-day class listing with full details
-- **Class Types**: Lecture, Laboratory, Tutorial, Seminar, Online, Hybrid
-- **Schedule Stats**: Total hours, lecture/lab breakdown, days per week
-- **Today Indicator**: Highlights current day's schedule
-- **Room & Instructor Info**: Complete class location and faculty details
+### 🎓 Student Management
+- Complete student profiling with personal, contact, and guardian information
+- Academic tracking (program, year level, section, status)
+- Student search with filters (program, year level, status)
+- Profile photo support
 
-### Academic Tracking
-- Enrollment history across all semesters
-- Subject grades with GWA calculation
-- Units tracking (current and total)
+### 📅 Class Scheduling
+- Visual timetable view with color-coded class types
+- Day-by-day list view with full details
+- Support for Lecture, Laboratory, Tutorial, Seminar, Online, Hybrid classes
+- Room and building assignments
+- Schedule conflict detection
 
-### Payment System
-- Multiple payment types (Tuition, Lab Fees, Miscellaneous, NSTP, etc.)
-- Payment status tracking (Paid, Partial, Unpaid, Overdue)
-- Multiple payment methods (Cash, Bank Transfer, GCash, Installment, Scholarship)
+### 📖 Enrollment Tracking
+- Subject enrollment per academic term
+- Midterm, Final, and computed grades
+- Grade status tracking (Pending, Passed, Failed, Incomplete)
+- Prerequisite validation before enrollment
+- GPA calculation (semester and cumulative)
 
-## Project Structure
+### 💰 Payment System
+- Multiple payment types (Tuition, Laboratory, Miscellaneous, Other)
+- Payment status auto-calculation via triggers:
+  - **Paid** → Full payment received
+  - **Overdue** → Past due date with balance
+  - **Partial** → Partial payment made
+  - **Unpaid** → No payment made
+- Multiple payment methods (Cash, Bank Transfer, Online, Check, etc.)
+- Payment history per student and academic term
+
+### 👥 User Management
+- Role-based access (Super Admin, Admin, Registrar, Faculty, Staff, Student)
+- Secure login with bcrypt password hashing
+- Session management with remember me option
+- Account lockout after failed attempts
+
+### 🏫 Academic Management
+- Department and college organization
+- Program/course management with accreditation status
+- Curriculum management with prerequisites
+- Academic year and semester tracking
+- Instructor/faculty records
+
+---
+
+## 📊 Database Overview
+
+| Component | Count |
+|-----------|-------|
+| Tables | 14 |
+| Views | 12 |
+| Stored Procedures | 20 |
+| Functions | 2 |
+| Triggers | 3 |
+
+For complete database documentation, see [docs/DB_DESIGN.md](docs/DB_DESIGN.md)
+
+---
+
+## 📁 Project Structure
 
 ```
 Cano-P-EMS/
 ├── assets/
 │   ├── css/
-│   │   └── style.css          # Desktop app styling (includes schedule styles)
+│   │   └── style.css           # Application styling
 │   └── js/
-│       └── script.js          # Interactive features (schedule toggle)
+│       └── script.js           # Interactive features
+├── docs/
+│   └── DB_DESIGN.md            # Database documentation & ERD
 ├── includes/
-│   ├── auth.php               # Authentication check
-│   ├── db.php                 # Database connection
-│   └── functions.php          # Helper functions (CRUD, schedule utilities)
+│   ├── auth.php                # Authentication middleware
+│   ├── db.php                  # Database connection (PDO)
+│   └── functions.php           # Helper functions
 ├── pages/
-│   └── students.php           # Student management (list, view, add, edit)
+│   └── students.php            # Student management page
 ├── sql/
-│   ├── sis_schema.sql         # Database schema (tables, indexes)
-│   ├── sis_sample_data.sql    # Sample data (20 students with history)
-│   └── schedules_schema.sql   # Schedule table and sample data (NEW!)
+│   ├── schema.sql              # Complete database schema (v2.3.0)
+│   └── sample_data.sql         # Sample data for testing
 ├── templates/
-│   ├── header.php             # Page header with authentication
-│   └── sidebar.php            # Sidebar navigation
-├── favicon.svg                # Application icon
-├── index.php                  # Entry point (redirects to students)
-├── login.php                  # Login page
-├── logout.php                 # Logout handler
-└── README.md                  # Documentation
+│   ├── header.php              # Page header
+│   └── sidebar.php             # Navigation sidebar
+├── favicon.svg                 # Application icon
+├── index.php                   # Entry point
+├── login.php                   # Login page
+├── logout.php                  # Logout handler
+├── test_db.php                 # Database connection test
+└── README.md                   # This file
 ```
 
-## Setup Instructions
+---
+
+## 🚀 Installation
 
 ### Prerequisites
 
-- **XAMPP** (or similar: WAMP, MAMP, Laragon)
-- **Web Browser** (Chrome, Firefox, Edge)
-- PHP 7.4+ with PDO extension
-- MySQL 5.7+
+- **XAMPP** (Apache + MySQL + PHP) or similar stack
+- **PHP 7.4+** with PDO extension
+- **MySQL 8.0+** or **MariaDB 10.5+**
+- Modern web browser
 
-### Step-by-Step Setup
+### Setup Steps
 
-1. **Copy project folder**
-   
-   Copy to your web server's document root:
-   - XAMPP: `C:\xampp\htdocs\Cano-P-EMS\`
-
-2. **Start your local server**
-   
-   Open XAMPP Control Panel and start:
-   - Apache
-   - MySQL
-
-3. **Create the database**
-   
-   Option A - Using Command Line:
+1. **Clone or copy the project**
    ```bash
-   mysql -u root -e "CREATE DATABASE IF NOT EXISTS ems_O6"
-   mysql -u root ems_O6 < sql/sis_schema.sql
-   mysql -u root ems_O6 < sql/sis_sample_data.sql
-   mysql -u root ems_O6 < sql/schedules_schema.sql
+   cd C:\xampp\htdocs
+   git clone https://github.com/DailyDebuggersNest/Cano-P-EMS.git
    ```
-   
-   Option B - Using phpMyAdmin:
+
+2. **Start XAMPP services**
+   - Open XAMPP Control Panel
+   - Start **Apache** and **MySQL**
+
+3. **Create and import database**
+
+   **Option A - phpMyAdmin:**
    - Open http://localhost/phpmyadmin
    - Create database: `ems_O6`
-   - Import `sql/sis_schema.sql` first
-   - Import `sql/sis_sample_data.sql` second
-   - Import `sql/schedules_schema.sql` third (for schedule feature)
+   - Import `sql/schema.sql`
+   - Import `sql/sample_data.sql`
+
+   **Option B - Command Line:**
+   ```bash
+   mysql -u root -e "CREATE DATABASE IF NOT EXISTS ems_O6"
+   mysql -u root ems_O6 < sql/schema.sql
+   mysql -u root ems_O6 < sql/sample_data.sql
+   ```
 
 4. **Configure database connection** (if needed)
    
@@ -115,92 +147,96 @@ Cano-P-EMS/
    define('DB_NAME', 'ems_O6');
    ```
 
-5. **Open in browser**
+5. **Access the application**
    
-   Visit: http://localhost/Cano-P-EMS/
-
-### Default Login Credentials
-
-| Username | Password | Role |
-|----------|----------|------|
-| admin    | admin123 | Admin |
-| staff    | staff123 | Staff |
-
-## How to Use
-
-### Managing Students
-1. Login with your credentials
-2. View the student list with search and filters
-3. Click a student row to view their complete profile
-4. Use tabs to switch between Overview, Subjects, and Payments
-5. Use "Add Student" to create new records
-
-### Viewing Enrollment History
-1. Open a student's profile
-2. Click the "Subjects" tab
-3. Use the dropdown to select a specific semester or "Show All"
-4. View grades, units, and GWA for each term
-
-### Viewing Payment History
-1. Open a student's profile
-2. Click the "Payments" tab
-3. Use the dropdown to select a specific term or "Show All"
-4. View payment details, amounts, and status
-
-## Database Schema
-
-### Main Tables
-- `students` - Student personal and academic information
-- `programs` - Available degree programs
-- `subjects` - Course catalog with units
-- `enrollments` - Student-subject enrollments with grades
-- `payments` - Payment records with status
-- `payment_types` - Fee categories
-- `users` - System users with roles
-
-## Customization
-
-### Changing Colors
-Edit `assets/css/style.css`:
-```css
-:root {
-    --primary-color: #0078d4;
-    --success-color: #059669;
-    --danger-color: #dc2626;
-}
-```
-
-### Adding New Programs
-Insert into `programs` table via phpMyAdmin or SQL.
-
-## Troubleshooting
-
-**"Couldn't connect to database" error**
-- Ensure MySQL is running in XAMPP
-- Verify database `ems_O6` exists
-- Check credentials in `includes/db.php`
-
-**Login not working**
-- Re-import `sis_sample_data.sql` to reset users
-- Clear browser cookies/cache
-
-**Styles not loading**
-- Access via localhost, not file://
-- Clear browser cache (Ctrl+Shift+R)
-
-## Technologies Used
-
-- **PHP 7.4+**: Backend logic with PDO
-- **MySQL**: Relational database
-- **CSS3**: Modern styling with CSS variables
-- **JavaScript**: Interactive features
-- **Font Awesome 6**: Icon library
-- **bcrypt**: Secure password hashing
-
-## License
-
-Free to use for learning and personal projects.
+   Open: http://localhost/Cano-P-EMS/
 
 ---
 
-**EMS Pro** - Student Information System
+## 🔐 Default Login Credentials
+
+| Username | Password | Role |
+|----------|----------|------|
+| admin | admin123 | Admin |
+| staff | staff123 | Staff |
+
+---
+
+## 💡 Usage
+
+### View Students
+1. Login with credentials
+2. Browse student list with search/filters
+3. Click a student to view profile
+
+### View Student Schedule
+```sql
+-- In phpMyAdmin, run:
+CALL sp_get_student_schedule(1);  -- Replace 1 with student_id
+
+-- Or view all schedules:
+SELECT * FROM vw_class_schedule;
+```
+
+### Calculate GPA
+```sql
+SELECT fn_calculate_gpa(1, 7) AS semester_gpa;           -- Student 1, Academic Year 7
+SELECT fn_calculate_cumulative_gpa(1) AS cumulative_gpa; -- Student 1, all terms
+```
+
+### Check Payment Status
+```sql
+CALL sp_get_payment_stats(NULL);  -- All terms
+CALL sp_get_payment_stats(7);     -- Specific academic year
+```
+
+### Update Overdue Payments (run daily)
+```sql
+CALL sp_update_overdue_payments();
+```
+
+---
+
+## 🛠️ Troubleshooting
+
+| Issue | Solution |
+|-------|----------|
+| Database connection error | Ensure MySQL is running; check `includes/db.php` credentials |
+| Login not working | Re-import `sample_data.sql` to reset users |
+| Styles not loading | Access via `localhost`, not `file://`; clear browser cache |
+| Missing tables/views | Re-import `schema.sql` (includes all objects) |
+
+---
+
+## 🔧 Technologies
+
+| Technology | Purpose |
+|------------|---------|
+| PHP 7.4+ | Backend logic with PDO |
+| MySQL/MariaDB | Relational database |
+| HTML5/CSS3 | Frontend structure and styling |
+| JavaScript | Interactive features |
+| Font Awesome 6 | Icons |
+| bcrypt | Password hashing |
+
+---
+
+## 📝 Version History
+
+| Version | Date | Changes |
+|---------|------|---------|
+| 2.3.0 | 2026-01-15 | Fixed payment triggers, added payment procedures, grade_scale table |
+| 2.2.0 | 2026-01-14 | Added 4 views, 6 procedures for reporting |
+| 2.1.0 | 2026-01-13 | UI improvements, schedule features |
+| 2.0.0 | 2026-01-12 | Initial release with core features |
+
+---
+
+## 📄 License
+
+Free to use for educational and personal projects.
+
+---
+
+**EMS** - Enrollment Management System  
+Developed for academic project demonstration
