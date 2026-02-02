@@ -1,0 +1,430 @@
+/* ===================================
+   Index Page Styles - Minimalist Design
+   =================================== */
+
+/* Skeleton Loader */
+.skeleton-table {
+    width: 100%;
+    border-collapse: separate;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    margin-top: 12px;
+}
+
+.skeleton-row {
+    height: 56px;
+    background: linear-gradient(90deg, var(--bg) 25%, var(--border) 50%, var(--bg) 75%);
+    background-size: 200% 100%;
+    animation: skeleton-loading 1.5s infinite ease-in-out;
+}
+
+@keyframes skeleton-loading {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+.skeleton-cell {
+    padding: 16px;
+}
+
+/* Controls Section */
+.controls {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    padding: 20px 24px;
+}
+
+.view-buttons {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+/* Filter Toggle Button */
+.btn-filter-toggle {
+    margin-left: auto;
+    position: relative;
+    padding-right: 24px;
+}
+
+.filter-active-dot {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 6px;
+    height: 6px;
+    background: var(--primary);
+    border-radius: 50%;
+}
+
+/* Filter Panel - Progressive Disclosure */
+.filter-panel {
+    display: none;
+    width: 100%;
+    padding-top: 16px;
+    margin-top: 16px;
+    border-top: 1px solid var(--border);
+    animation: slideDown 0.15s ease-out;
+}
+
+.filter-panel.active {
+    display: block;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.sort-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.sort-controls label {
+    font-size: 13px;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.sort-select {
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    font-size: 13px;
+    background: var(--surface);
+    color: var(--text);
+    min-width: 120px;
+}
+
+.sort-select:focus {
+    outline: none;
+    border-color: var(--primary);
+}
+
+.filter-form {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.filter-form label {
+    font-size: 13px;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+/* Search */
+.search-box {
+    flex: 1;
+    min-width: 250px;
+}
+
+.search-form {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.search-input {
+    flex: 1;
+    padding: 10px 14px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    font-family: var(--font);
+    min-width: 200px;
+    max-width: 320px;
+    height: 42px;
+    transition: border-color 0.15s ease;
+    background: var(--surface);
+    color: var(--text);
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: var(--text);
+}
+
+.search-input::placeholder {
+    color: var(--text-muted);
+}
+
+/* Header Search Area */
+.header-search {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+/* Table Container */
+.table-container {
+    overflow-x: auto;
+    margin-bottom: 20px;
+}
+
+/* Margin Utilities */
+.mb-16 { margin-bottom: 16px; }
+.mb-24 { margin-bottom: 24px; }
+.mb-32 { margin-bottom: 32px; }
+.mb-40 { margin-bottom: 40px; }
+
+/* Student Table - Clean Lines */
+.student-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 8px;
+}
+
+.student-table th {
+    font-weight: 600;
+    color: var(--text-secondary);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    text-align: left;
+    background: transparent;
+}
+
+.student-table th.sort-active {
+    color: var(--text);
+}
+
+.student-table td {
+    padding: 16px;
+    border-bottom: 1px solid var(--border);
+    font-size: 14px;
+    color: var(--text);
+    vertical-align: middle;
+    text-align: left;
+}
+
+.student-table tbody tr {
+    transition: background-color 0.15s ease;
+}
+
+.student-table tbody tr:hover {
+    background-color: var(--bg);
+}
+
+.student-table tbody tr.clickable-row {
+    cursor: pointer;
+}
+
+.student-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* Add Button Position */
+.btn-add {
+    margin-left: auto;
+}
+
+/* Pagination - Minimal */
+.pagination {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.pagination-info {
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.pagination-controls {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+/* Header Top with Hamburger */
+.header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+
+/* Hamburger Menu */
+.hamburger {
+    display: none;
+    flex-direction: column;
+    justify-content: space-between;
+    width: 24px;
+    height: 18px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    z-index: 1001;
+}
+
+.hamburger span {
+    display: block;
+    width: 100%;
+    height: 2px;
+    background: var(--text);
+    border-radius: 2px;
+    transition: all 0.2s ease;
+}
+
+.hamburger.active span:nth-child(1) {
+    transform: rotate(45deg) translate(5px, 5px);
+}
+
+.hamburger.active span:nth-child(2) {
+    opacity: 0;
+}
+
+.hamburger.active span:nth-child(3) {
+    transform: rotate(-45deg) translate(5px, -5px);
+}
+
+/* Mobile Navigation */
+.mobile-nav {
+    display: none;
+    flex-direction: column;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    margin-bottom: 20px;
+    overflow: hidden;
+}
+
+.mobile-nav.active {
+    display: flex;
+}
+
+.mobile-nav .nav-link {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 20px;
+    text-decoration: none;
+    color: var(--text);
+    border-bottom: 1px solid var(--border);
+    font-size: 14px;
+    font-weight: 500;
+    transition: background 0.15s ease;
+}
+
+.mobile-nav .nav-link:last-child {
+    border-bottom: none;
+}
+
+.mobile-nav .nav-link:hover,
+.mobile-nav .nav-link.active {
+    background: var(--bg);
+    color: var(--primary);
+}
+
+/* Programs & Curriculum Cards */
+.program-cards,
+.curriculum-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+    margin-top: 16px;
+}
+
+.program-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 20px;
+    transition: border-color 0.15s ease;
+}
+
+.program-card:hover {
+    border-color: var(--border-hover);
+}
+
+.program-card h3 {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--text);
+}
+
+.program-card p {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .hamburger {
+        display: flex;
+    }
+
+    .controls {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+        padding: 16px;
+    }
+
+    .view-buttons {
+        display: none;
+    }
+
+    .sort-controls {
+        margin-left: 0;
+        flex-wrap: wrap;
+    }
+
+    .student-table th,
+    .student-table td {
+        font-size: 13px;
+        padding: 12px 10px;
+    }
+
+    .header-search {
+        width: 100%;
+    }
+
+    .header-search .search-form {
+        width: 100%;
+    }
+
+    .search-input {
+        max-width: 100%;
+    }
+
+    .pagination {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
+
+@media (max-width: 480px) {
+    .student-table th:nth-child(4),
+    .student-table td:nth-child(4),
+    .student-table th:nth-child(5),
+    .student-table td:nth-child(5) {
+        display: none;
+    }
+}

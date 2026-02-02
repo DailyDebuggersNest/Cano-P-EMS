@@ -1,0 +1,874 @@
+<?php
+require_once 'db_helpers.php';
+
+/**
+ * Get program-specific tuition rate for a student
+ * Falls back to base rate from fees table if no program-specific rate exists
+ * 
+ * @param mysqli $conn Database connection
+ * @param int $program_id Program ID
+ * @return array ['tuition_per_unit' => float, 'lab_fee' => float]
+ */
+function getProgramTuitionRate($conn, $program_id) {
+    // Check for program-specific rate
+    $sql = "SELECT tuition_per_unit, lab_fee FROM program_tuition_rates 
+            WHERE program_id = ? AND is_active = 1 
+            ORDER BY effective_date DESC LIMIT 1";
+    $result = db_query($conn, $sql, 'i', [$program_id]);
+    $row = $result ? db_fetch_one($result) : null;
+    
+    if ($row) {
+        return [
+            'tuition_per_unit' => floatval($row['tuition_per_unit']),
+            'lab_fee' => floatval($row['lab_fee'])
+        ];
+    }
+    
+    // Fallback to base rate from fees table
+    $base_sql = "SELECT amount FROM fees WHERE code = 'TUITION' AND type = 'per_unit' LIMIT 1";
+    $base_result = db_query($conn, $base_sql);
+    $base = $base_result ? db_fetch_one($base_result) : null;
+    
+    $lab_sql = "SELECT amount FROM fees WHERE code = 'LAB' LIMIT 1";
+    $lab_result = db_query($conn, $lab_sql);
+    $lab = $lab_result ? db_fetch_one($lab_result) : null;
+    
+    return [
+        'tuition_per_unit' => $base ? floatval($base['amount']) : 800.00,
+        'lab_fee' => $lab ? floatval($lab['amount']) : 2000.00
+    ];
+}
+
+/**
+ * Get student's program ID
+ * 
+ * @param mysqli $conn Database connection
+ * @param int $student_id Student ID
+ * @return int|null Program ID or null
+ */
+function getStudentProgramId($conn, $student_id) {
+    $sql = "SELECT program_id FROM students WHERE student_id = ?";
+    $result = db_query($conn, $sql, 'i', [$student_id]);
+    $row = $result ? db_fetch_one($result) : null;
+    return $row ? intval($row['program_id']) : null;
+}
+
+/**
+ * Get available overpayment credit for a student from previous terms
+ * 
+ * @param mysqli $conn Database connection
+ * @param int $student_id Student ID
+ * @return float Total available overpayment credit
+ */
+function getAvailableOverpaymentCredit($conn, $student_id) {
+    $sql = "SELECT SUM(amount) as total FROM term_overpayments 
+            WHERE student_id = ? AND is_applied = 0";
+    $result = db_query($conn, $sql, 'i', [$student_id]);
+    $row = $result ? db_fetch_one($result) : null;
+    return $row && $row['total'] ? floatval($row['total']) : 0;
+}
+
+/**
+ * Get overpayment details for display
+ * 
+ * @param mysqli $conn Database connection
+ * @param int $student_id Student ID
+ * @param bool $unapplied_only Only get unapplied overpayments
+ * @return array List of overpayments
+ */
+function getStudentOverpayments($conn, $student_id, $unapplied_only = true) {
+    $sql = "SELECT * FROM term_overpayments WHERE student_id = ?";
+    if ($unapplied_only) {
+        $sql .= " AND is_applied = 0";
+    }
+    $sql .= " ORDER BY created_at DESC";
+    $result = db_query($conn, $sql, 'i', [$student_id]);
+    return $result ? db_fetch_all($result) : [];
+}
+
+/**
+ * Record an overpayment from a term
+ * 
+ * @param mysqli $conn Database connection
+ * @param int $student_id Student ID
+ * @param string $ay Academic Year
+ * @param int $sem Semester
+ * @param float $amount Overpayment amount
+ * @return bool Success
+ */
+function recordOverpayment($conn, $student_id, $ay, $sem, $amount) {
+    // Check if overpayment already exists for this term
+    $exists_sql = "SELECT overpayment_id, amount FROM term_overpayments 
+                   WHERE student_id = ? AND source_academic_year = ? AND source_semester = ? AND is_applied = 0";
+    $exists = db_fetch_one(db_query($conn, $exists_sql, 'isi', [$student_id, $ay, $sem]));
+    
+    if ($exists) {
+        // Update existing overpayment
+        $update_sql = "UPDATE term_overpayments SET amount = ?, updated_at = NOW() WHERE overpayment_id = ?";
+        return db_query($conn, $update_sql, 'di', [$amount, $exists['overpayment_id']]) !== false;
+    }
+    
+    $sql = "INSERT INTO term_overpayments (student_id, source_academic_year, source_semester, amount) 
+            VALUES (?, ?, ?, ?)";
+    return db_query($conn, $sql, 'isid', [$student_id, $ay, $sem, $amount]) !== false;
+}
+
+/**
+ * Apply overpayment credit to a term
+ * 
+ * @param mysqli $conn Database connection
+ * @param int $overpayment_id Overpayment record ID
+ * @param string $ay Target Academic Year
+ * @param int $sem Target Semester
+ * @return bool Success
+ */
+function applyOverpaymentCredit($conn, $overpayment_id, $ay, $sem) {
+    $sql = "UPDATE term_overpayments 
+            SET is_applied = 1, applied_academic_year = ?, applied_semester = ?, applied_date = NOW(), updated_at = NOW() 
+            WHERE overpayment_id = ?";
+    return db_query($conn, $sql, 'sii', [$ay, $sem, $overpayment_id]) !== false;
+}
+
+/**
+ * Calculate all terms with automatic carry-forward of overpayments
+ * This gives a complete financial picture with running balance
+ * 
+ * @param mysqli $conn Database connection
+ * @param int $student_id Student ID
+ * @return array ['terms' => array, 'grand_totals' => array]
+ */
+function calculateAllTermsWithCarryForward($conn, $student_id) {
+    // Get student's program for tuition rate
+    $program_id = getStudentProgramId($conn, $student_id);
+    $rates = getProgramTuitionRate($conn, $program_id);
+    $tuition_rate = $rates['tuition_per_unit'];
+    $program_lab_fee = $rates['lab_fee'];
+    
+    // Get fixed fees (excluding LAB since it's program-specific now)
+    $total_fixed_fee = 0;
+    $res = db_query($conn, "SELECT * FROM fees WHERE type = 'fixed' AND code != 'LAB'");
+    while($row = $res->fetch_assoc()) {
+        $total_fixed_fee += floatval($row['amount']);
+    }
+    $total_fixed_fee += $program_lab_fee;
+    
+    // Get all enrolled terms ordered chronologically
+    $terms_sql = "SELECT DISTINCT e.academic_year, c.semester 
+                  FROM enrollments e 
+                  JOIN curriculum c ON e.curriculum_id = c.curriculum_id 
+                  WHERE e.student_id = ? 
+                  ORDER BY e.academic_year ASC, c.semester ASC";
+    $terms = db_fetch_all(db_query($conn, $terms_sql, 'i', [$student_id]));
+    
+    $result_terms = [];
+    $running_credit = 0; // Carry-forward credit from previous terms
+    $grand_total_assessment = 0;
+    $grand_total_paid = 0;
+    $grand_total_discount = 0;
+    
+    foreach ($terms as $term) {
+        $ay = $term['academic_year'];
+        $sem = $term['semester'];
+        
+        // Get units for this term
+        $u_sql = "SELECT SUM(c.units) as total_units 
+                  FROM enrollments e 
+                  JOIN curriculum c ON e.curriculum_id = c.curriculum_id 
+                  WHERE e.student_id = ? AND e.academic_year = ? AND c.semester = ? 
+                  AND e.status IN ('Enrolled', 'Passed', 'Failed')";
+        $units_row = db_fetch_one(db_query($conn, $u_sql, 'isi', [$student_id, $ay, $sem]));
+        $units = $units_row ? floatval($units_row['total_units']) : 0;
+        
+        $tuition = $units * $tuition_rate;
+        $misc = ($units > 0) ? $total_fixed_fee : 0;
+        
+        // Get scholarship discounts
+        $scholarship_data = calculateScholarshipDiscount($conn, $student_id, $ay, $sem, $tuition, $misc);
+        $term_discount = $scholarship_data['total_discount'];
+        
+        $gross_assessment = $tuition + $misc;
+        $net_assessment = $gross_assessment - $term_discount;
+        
+        // Get payments for this term
+        $pay_sql = "SELECT SUM(amount) as total_paid FROM payments 
+                    WHERE student_id = ? AND academic_year = ? AND semester = ?";
+        $pay_row = db_fetch_one(db_query($conn, $pay_sql, 'isi', [$student_id, $ay, $sem]));
+        $term_paid = $pay_row && $pay_row['total_paid'] ? floatval($pay_row['total_paid']) : 0;
+        
+        // Apply carry-forward credit from previous terms
+        $credit_applied = 0;
+        if ($running_credit > 0 && $net_assessment > 0) {
+            $credit_applied = min($running_credit, $net_assessment);
+            $running_credit -= $credit_applied;
+        }
+        
+        // Calculate term balance
+        $term_balance = $net_assessment - $term_paid - $credit_applied;
+        
+        // If overpaid this term, add to carry-forward credit
+        if ($term_balance < 0) {
+            $running_credit += abs($term_balance);
+            $term_balance = 0; // This term is fully paid
+        }
+        
+        $result_terms[] = [
+            'ay' => $ay,
+            'sem' => $sem,
+            'units' => $units,
+            'tuition' => $tuition,
+            'tuition_rate' => $tuition_rate,
+            'misc' => $misc,
+            'gross_assessment' => $gross_assessment,
+            'discount' => $term_discount,
+            'discounts' => $scholarship_data['discounts'],
+            'net_assessment' => $net_assessment,
+            'paid' => $term_paid,
+            'credit_applied' => $credit_applied,
+            'balance' => $term_balance,
+            'running_credit' => $running_credit
+        ];
+        
+        $grand_total_assessment += $net_assessment;
+        $grand_total_paid += $term_paid;
+        $grand_total_discount += $term_discount;
+    }
+    
+    return [
+        'terms' => $result_terms,
+        'grand_totals' => [
+            'assessment' => $grand_total_assessment,
+            'paid' => $grand_total_paid,
+            'discount' => $grand_total_discount,
+            'available_credit' => $running_credit,
+            'balance' => $grand_total_assessment - $grand_total_paid
+        ],
+        'tuition_rate' => $tuition_rate,
+        'lab_fee' => $program_lab_fee
+    ];
+}
+
+/**
+ * Calculate the total outstanding balance for a student.
+ * Now uses program-specific tuition rates and handles overpayment credits.
+ * 
+ * @param mysqli $conn Database connection
+ * @param int $student_id Student ID
+ * @return float The total balance (Assessment - Payments - Overpayment Credits)
+ */
+function getStudentBalance($conn, $student_id) {
+    // Get student's program for tuition rate
+    $program_id = getStudentProgramId($conn, $student_id);
+    $rates = getProgramTuitionRate($conn, $program_id);
+    $tuition_rate = $rates['tuition_per_unit'];
+    $program_lab_fee = $rates['lab_fee'];
+    
+    // Get fixed fees (excluding LAB since it's program-specific now)
+    $total_fixed_fee = 0;
+    $res = db_query($conn, "SELECT * FROM fees WHERE type = 'fixed' AND code != 'LAB'");
+    while($row = $res->fetch_assoc()) {
+        $total_fixed_fee += floatval($row['amount']);
+    }
+    
+    // Add program-specific lab fee
+    $total_fixed_fee += $program_lab_fee;
+
+    // Get all enrolled terms
+    $sem_sql = "SELECT DISTINCT e.academic_year, c.semester 
+                FROM enrollments e 
+                JOIN curriculum c ON e.curriculum_id = c.curriculum_id 
+                WHERE e.student_id = ? 
+                AND e.status IN ('Enrolled', 'Passed', 'Failed', 'Dropped')";
+                
+    $terms_res = db_query($conn, $sem_sql, 'i', [$student_id]);
+    $terms = $terms_res ? db_fetch_all($terms_res) : [];
+    
+    $total_assessment = 0;
+    
+    foreach ($terms as $term) {
+        $ay = $term['academic_year'];
+        $sem = $term['semester'];
+        
+        // Get total units for this term
+        $u_sql = "SELECT SUM(c.units) as total_units 
+                  FROM enrollments e 
+                  JOIN curriculum c ON e.curriculum_id = c.curriculum_id 
+                  WHERE e.student_id = ? AND e.academic_year = ? AND c.semester = ? 
+                  AND e.status IN ('Enrolled', 'Passed', 'Failed', 'Dropped')";
+                  
+        $units_row = db_fetch_one(db_query($conn, $u_sql, 'isi', [$student_id, $ay, $sem]));
+        $units = $units_row ? floatval($units_row['total_units']) : 0;
+        
+        if ($units > 0) {
+            $term_tuition = $units * $tuition_rate;
+            $term_misc = $total_fixed_fee;
+            $total_assessment += ($term_tuition + $term_misc);
+        }
+    }
+
+    // Get Total Payments
+    $pay_sql = "SELECT SUM(amount) as total_paid FROM payments WHERE student_id = ?";
+    $pay_row = db_fetch_one(db_query($conn, $pay_sql, 'i', [$student_id]));
+    $total_paid = $pay_row ? floatval($pay_row['total_paid']) : 0;
+
+    // Return Balance (Note: overpayment credits are tracked separately and auto-applied)
+    return $total_assessment - $total_paid;
+}
+
+/**
+ * Calculate the assessment for a specific term.
+ * Now uses program-specific tuition rates.
+ */
+function getTermAssessment($conn, $student_id, $ay, $sem) {
+    // Get student's program for tuition rate
+    $program_id = getStudentProgramId($conn, $student_id);
+    $rates = getProgramTuitionRate($conn, $program_id);
+    $tuition_rate = $rates['tuition_per_unit'];
+    $program_lab_fee = $rates['lab_fee'];
+    
+    // Get fixed fees (excluding LAB since it's program-specific now)
+    $total_fixed_fee = 0;
+    $res = db_query($conn, "SELECT * FROM fees WHERE type = 'fixed' AND code != 'LAB'");
+    while($row = $res->fetch_assoc()) {
+        $total_fixed_fee += floatval($row['amount']);
+    }
+    
+    // Add program-specific lab fee
+    $total_fixed_fee += $program_lab_fee;
+
+    $u_sql = "SELECT SUM(c.units) as total_units 
+              FROM enrollments e 
+              JOIN curriculum c ON e.curriculum_id = c.curriculum_id 
+              WHERE e.student_id = ? AND e.academic_year = ? AND c.semester = ? 
+              AND e.status IN ('Enrolled', 'Passed', 'Failed', 'Dropped')";
+              
+    $units_row = db_fetch_one(db_query($conn, $u_sql, 'isi', [$student_id, $ay, $sem]));
+    $units = $units_row ? floatval($units_row['total_units']) : 0;
+    
+    if ($units > 0) {
+        return ($units * $tuition_rate) + $total_fixed_fee;
+    }
+    return 0;
+}
+
+/**
+ * Calculate the balance for a specific term.
+ * Now includes overpayment credits from previous terms.
+ */
+function getTermBalance($conn, $student_id, $ay, $sem) {
+    $assessment = getTermAssessment($conn, $student_id, $ay, $sem);
+    
+    $pay_sql = "SELECT SUM(amount) as total_paid FROM payments WHERE student_id = ? AND academic_year = ? AND semester = ?";
+    $pay_row = db_fetch_one(db_query($conn, $pay_sql, 'isi', [$student_id, $ay, $sem]));
+    $total_paid = $pay_row ? floatval($pay_row['total_paid']) : 0;
+
+    // Check for applied overpayment credits to this term
+    $credit_sql = "SELECT SUM(amount) as applied_credit FROM term_overpayments 
+                   WHERE student_id = ? AND applied_academic_year = ? AND applied_semester = ? AND is_applied = 1";
+    $credit_row = db_fetch_one(db_query($conn, $credit_sql, 'isi', [$student_id, $ay, $sem]));
+    $applied_credit = $credit_row && $credit_row['applied_credit'] ? floatval($credit_row['applied_credit']) : 0;
+
+    return $assessment - $total_paid - $applied_credit;
+}
+
+/**
+ * Process term completion and handle overpayments
+ * Call this when a term is fully paid to check for overpayment
+ * 
+ * @param mysqli $conn Database connection
+ * @param int $student_id Student ID
+ * @param string $ay Academic Year
+ * @param int $sem Semester
+ * @return array ['has_overpayment' => bool, 'overpayment_amount' => float]
+ */
+function processTermOverpayment($conn, $student_id, $ay, $sem) {
+    $balance = getTermBalance($conn, $student_id, $ay, $sem);
+    
+    if ($balance < 0) {
+        // Negative balance means overpayment
+        $overpayment = abs($balance);
+        recordOverpayment($conn, $student_id, $ay, $sem, $overpayment);
+        return ['has_overpayment' => true, 'overpayment_amount' => $overpayment];
+    }
+    
+    return ['has_overpayment' => false, 'overpayment_amount' => 0];
+}
+
+/**
+ * Apply available overpayment credit to a term's balance
+ * 
+ * @param mysqli $conn Database connection
+ * @param int $student_id Student ID
+ * @param string $target_ay Target Academic Year
+ * @param int $target_sem Target Semester
+ * @return array ['applied_amount' => float, 'remaining_balance' => float]
+ */
+function applyAvailableCredits($conn, $student_id, $target_ay, $target_sem) {
+    // Get current term balance
+    $current_balance = getTermBalance($conn, $student_id, $target_ay, $target_sem);
+    
+    if ($current_balance <= 0) {
+        return ['applied_amount' => 0, 'remaining_balance' => $current_balance];
+    }
+    
+    // Get unapplied overpayments (oldest first)
+    $sql = "SELECT * FROM term_overpayments 
+            WHERE student_id = ? AND is_applied = 0 
+            ORDER BY source_academic_year ASC, source_semester ASC";
+    $result = db_query($conn, $sql, 'i', [$student_id]);
+    $overpayments = $result ? db_fetch_all($result) : [];
+    
+    $total_applied = 0;
+    $remaining = $current_balance;
+    
+    foreach ($overpayments as $op) {
+        if ($remaining <= 0) break;
+        
+        $apply_amount = min($op['amount'], $remaining);
+        
+        if ($apply_amount == $op['amount']) {
+            // Apply full overpayment
+            applyOverpaymentCredit($conn, $op['overpayment_id'], $target_ay, $target_sem);
+        } else {
+            // Partial application - update the remaining amount
+            $new_amount = $op['amount'] - $apply_amount;
+            $update_sql = "UPDATE term_overpayments SET amount = ?, updated_at = NOW() WHERE overpayment_id = ?";
+            db_query($conn, $update_sql, 'di', [$new_amount, $op['overpayment_id']]);
+            
+            // Record the applied portion
+            $insert_sql = "INSERT INTO term_overpayments 
+                          (student_id, source_academic_year, source_semester, amount, applied_academic_year, applied_semester, is_applied, applied_date) 
+                          VALUES (?, ?, ?, ?, ?, ?, 1, NOW())";
+            db_query($conn, $insert_sql, 'isidsi', [$student_id, $op['source_academic_year'], $op['source_semester'], $apply_amount, $target_ay, $target_sem]);
+        }
+        
+        $total_applied += $apply_amount;
+        $remaining -= $apply_amount;
+    }
+    
+    return ['applied_amount' => $total_applied, 'remaining_balance' => $remaining];
+}
+
+// ============================================================
+// SCHOLARSHIP FUNCTIONS
+// ============================================================
+
+/**
+ * Get all available scholarships
+ * @param mysqli $conn Database connection
+ * @param bool $active_only Only return active scholarships
+ * @return array List of scholarships
+ */
+function getAllScholarships($conn, $active_only = true) {
+    $sql = "SELECT * FROM scholarships";
+    if ($active_only) {
+        $sql .= " WHERE is_active = 1";
+    }
+    $sql .= " ORDER BY name";
+    $result = db_query($conn, $sql);
+    return $result ? db_fetch_all($result) : [];
+}
+
+/**
+ * Get scholarships for a student in a specific term
+ * @param mysqli $conn Database connection
+ * @param int $student_id Student ID
+ * @param string $ay Academic year
+ * @param int $sem Semester
+ * @return array List of student scholarships with details
+ */
+function getStudentScholarships($conn, $student_id, $ay = null, $sem = null) {
+    $sql = "SELECT ss.*, s.code, s.name, s.discount_type, s.discount_value, s.applies_to
+            FROM student_scholarships ss
+            JOIN scholarships s ON ss.scholarship_id = s.scholarship_id
+            WHERE ss.student_id = ?";
+    
+    $types = 'i';
+    $params = [$student_id];
+    
+    if ($ay !== null) {
+        $sql .= " AND ss.academic_year = ?";
+        $types .= 's';
+        $params[] = $ay;
+    }
+    if ($sem !== null) {
+        $sql .= " AND ss.semester = ?";
+        $types .= 'i';
+        $params[] = $sem;
+    }
+    
+    $sql .= " AND ss.status = 'Active'";
+    $sql .= " ORDER BY ss.academic_year DESC, ss.semester DESC";
+    
+    $result = db_query($conn, $sql, $types, $params);
+    return $result ? db_fetch_all($result) : [];
+}
+
+/**
+ * Calculate scholarship discount for a term
+ * @param mysqli $conn Database connection
+ * @param int $student_id Student ID
+ * @param string $ay Academic year
+ * @param int $sem Semester
+ * @param float $tuition_amount Tuition amount before discount
+ * @param float $misc_amount Misc fees amount before discount
+ * @return array ['total_discount' => float, 'discounts' => array]
+ */
+function calculateScholarshipDiscount($conn, $student_id, $ay, $sem, $tuition_amount, $misc_amount) {
+    $scholarships = getStudentScholarships($conn, $student_id, $ay, $sem);
+    
+    $total_discount = 0;
+    $discounts = [];
+    
+    foreach ($scholarships as $s) {
+        $discount = 0;
+        $base_amount = 0;
+        
+        // Determine base amount based on what the scholarship applies to
+        switch ($s['applies_to']) {
+            case 'tuition':
+                $base_amount = $tuition_amount;
+                break;
+            case 'misc':
+                $base_amount = $misc_amount;
+                break;
+            case 'all':
+                $base_amount = $tuition_amount + $misc_amount;
+                break;
+        }
+        
+        // Calculate discount based on type
+        if ($s['discount_type'] === 'percentage') {
+            $discount = $base_amount * ($s['discount_value'] / 100);
+        } else {
+            $discount = min($s['discount_value'], $base_amount);
+        }
+        
+        $discounts[] = [
+            'name' => $s['name'],
+            'code' => $s['code'],
+            'type' => $s['discount_type'],
+            'value' => $s['discount_value'],
+            'applies_to' => $s['applies_to'],
+            'discount_amount' => $discount
+        ];
+        
+        $total_discount += $discount;
+    }
+    
+    return [
+        'total_discount' => $total_discount,
+        'discounts' => $discounts
+    ];
+}
+
+/**
+ * Award a scholarship to a student
+ * @param mysqli $conn Database connection
+ * @param int $student_id Student ID
+ * @param int $scholarship_id Scholarship ID
+ * @param string $ay Academic year
+ * @param int $sem Semester
+ * @param string $notes Optional notes
+ * @return bool Success status
+ */
+function awardScholarship($conn, $student_id, $scholarship_id, $ay, $sem, $notes = '') {
+    // Check if already awarded
+    $exists = db_exists($conn, 'student_scholarships',
+        'student_id = ? AND scholarship_id = ? AND academic_year = ? AND semester = ?',
+        'iisi', [$student_id, $scholarship_id, $ay, $sem]);
+    
+    if ($exists) {
+        return false; // Already awarded
+    }
+    
+    $sql = "INSERT INTO student_scholarships 
+            (student_id, scholarship_id, academic_year, semester, status, awarded_date, notes)
+            VALUES (?, ?, ?, ?, 'Active', CURDATE(), ?)";
+    
+    return db_query($conn, $sql, 'iisis', [$student_id, $scholarship_id, $ay, $sem, $notes]) !== false;
+}
+
+/**
+ * Revoke a scholarship from a student
+ * @param mysqli $conn Database connection
+ * @param int $student_scholarship_id The student_scholarship record ID
+ * @return bool Success status
+ */
+function revokeScholarship($conn, $student_scholarship_id) {
+    $sql = "UPDATE student_scholarships SET status = 'Revoked', updated_at = NOW() 
+            WHERE student_scholarship_id = ?";
+    return db_query($conn, $sql, 'i', [$student_scholarship_id]) !== false;
+}
+
+// ============================================================
+// LATE FEE FUNCTIONS
+// ============================================================
+
+/**
+ * Get late fee configuration
+ * @param mysqli $conn Database connection
+ * @return array Late fee config or defaults
+ */
+function getLateFeeConfig($conn) {
+    $sql = "SELECT * FROM late_fee_config WHERE is_active = 1 LIMIT 1";
+    $result = db_query($conn, $sql);
+    $config = $result ? db_fetch_one($result) : null;
+    
+    if (!$config) {
+        // Return defaults
+        return [
+            'fee_type' => 'percentage',
+            'fee_value' => 5.00,
+            'grace_period_days' => 30,
+            'max_penalty_percent' => 25.00,
+            'apply_per' => 'month'
+        ];
+    }
+    
+    return $config;
+}
+
+/**
+ * Calculate late fees for a student's term
+ * @param mysqli $conn Database connection
+ * @param int $student_id Student ID
+ * @param string $ay Academic year
+ * @param int $sem Semester
+ * @param string $due_date The payment due date (Y-m-d format)
+ * @return array ['late_fee' => float, 'days_overdue' => int, 'periods_overdue' => int]
+ */
+function calculateLateFee($conn, $student_id, $ay, $sem, $due_date = null) {
+    $config = getLateFeeConfig($conn);
+    
+    // Get current balance
+    $balance = getTermBalance($conn, $student_id, $ay, $sem);
+    
+    if ($balance <= 0) {
+        return ['late_fee' => 0, 'days_overdue' => 0, 'periods_overdue' => 0, 'message' => 'No balance due'];
+    }
+    
+    // Determine due date (if not provided, assume 30 days from enrollment start)
+    if ($due_date === null) {
+        // Get earliest enrollment date for this term
+        $enroll_sql = "SELECT MIN(enrolled_at) as first_enrolled 
+                       FROM enrollments e
+                       JOIN curriculum c ON e.curriculum_id = c.curriculum_id
+                       WHERE e.student_id = ? AND e.academic_year = ? AND c.semester = ?";
+        $enroll_row = db_fetch_one(db_query($conn, $enroll_sql, 'isi', [$student_id, $ay, $sem]));
+        
+        if ($enroll_row && $enroll_row['first_enrolled']) {
+            $enrolled_date = new DateTime($enroll_row['first_enrolled']);
+            $enrolled_date->modify('+' . $config['grace_period_days'] . ' days');
+            $due_date = $enrolled_date->format('Y-m-d');
+        } else {
+            return ['late_fee' => 0, 'days_overdue' => 0, 'periods_overdue' => 0, 'message' => 'No enrollment found'];
+        }
+    }
+    
+    $today = new DateTime();
+    $due = new DateTime($due_date);
+    
+    if ($today <= $due) {
+        return ['late_fee' => 0, 'days_overdue' => 0, 'periods_overdue' => 0, 'message' => 'Not yet overdue'];
+    }
+    
+    $days_overdue = $today->diff($due)->days;
+    
+    // Calculate periods overdue
+    $periods_overdue = 1;
+    if ($config['apply_per'] === 'month') {
+        $periods_overdue = ceil($days_overdue / 30);
+    } elseif ($config['apply_per'] === 'week') {
+        $periods_overdue = ceil($days_overdue / 7);
+    }
+    
+    // Calculate the fee
+    $late_fee = 0;
+    if ($config['fee_type'] === 'percentage') {
+        $late_fee = $balance * ($config['fee_value'] / 100) * $periods_overdue;
+    } else {
+        $late_fee = $config['fee_value'] * $periods_overdue;
+    }
+    
+    // Apply maximum cap
+    $max_fee = $balance * ($config['max_penalty_percent'] / 100);
+    $late_fee = min($late_fee, $max_fee);
+    
+    return [
+        'late_fee' => round($late_fee, 2),
+        'days_overdue' => $days_overdue,
+        'periods_overdue' => $periods_overdue,
+        'max_fee' => round($max_fee, 2),
+        'balance' => $balance,
+        'message' => 'Overdue by ' . $days_overdue . ' days'
+    ];
+}
+
+/**
+ * Apply late fee to student's account
+ * @param mysqli $conn Database connection
+ * @param int $student_id Student ID
+ * @param string $ay Academic year
+ * @param int $sem Semester
+ * @param float $amount Late fee amount
+ * @param string $reason Reason for late fee
+ * @return bool Success status
+ */
+function applyLateFee($conn, $student_id, $ay, $sem, $amount, $reason = 'Late payment penalty') {
+    $sql = "INSERT INTO student_late_fees 
+            (student_id, academic_year, semester, amount, applied_date, reason)
+            VALUES (?, ?, ?, ?, CURDATE(), ?)";
+    
+    return db_query($conn, $sql, 'isids', [$student_id, $ay, $sem, $amount, $reason]) !== false;
+}
+
+/**
+ * Get applied late fees for a student
+ * @param mysqli $conn Database connection
+ * @param int $student_id Student ID
+ * @param string $ay Academic year (optional)
+ * @param int $sem Semester (optional)
+ * @return array List of late fees
+ */
+function getStudentLateFees($conn, $student_id, $ay = null, $sem = null) {
+    $sql = "SELECT * FROM student_late_fees WHERE student_id = ?";
+    $types = 'i';
+    $params = [$student_id];
+    
+    if ($ay !== null) {
+        $sql .= " AND academic_year = ?";
+        $types .= 's';
+        $params[] = $ay;
+    }
+    if ($sem !== null) {
+        $sql .= " AND semester = ?";
+        $types .= 'i';
+        $params[] = $sem;
+    }
+    
+    $sql .= " ORDER BY applied_date DESC";
+    $result = db_query($conn, $sql, $types, $params);
+    return $result ? db_fetch_all($result) : [];
+}
+
+/**
+ * Waive a late fee
+ * @param mysqli $conn Database connection
+ * @param int $late_fee_id Late fee record ID
+ * @param string $waived_by Who waived it
+ * @return bool Success status
+ */
+function waiveLateFee($conn, $late_fee_id, $waived_by = 'Admin') {
+    $sql = "UPDATE student_late_fees 
+            SET is_waived = 1, waived_by = ?, waived_date = CURDATE() 
+            WHERE late_fee_id = ?";
+    return db_query($conn, $sql, 'si', [$waived_by, $late_fee_id]) !== false;
+}
+
+/**
+ * Get comprehensive financial summary for a student term
+ * Includes: Assessment, Scholarships, Late Fees, Payments, Overpayment Credits, Balance
+ * Now uses program-specific tuition rates.
+ * @param mysqli $conn Database connection
+ * @param int $student_id Student ID
+ * @param string $ay Academic year
+ * @param int $sem Semester
+ * @return array Complete financial breakdown
+ */
+function getComprehensiveFinancialSummary($conn, $student_id, $ay, $sem) {
+    // Get student's program for tuition rate
+    $program_id = getStudentProgramId($conn, $student_id);
+    $rates = getProgramTuitionRate($conn, $program_id);
+    $tuition_rate = $rates['tuition_per_unit'];
+    $program_lab_fee = $rates['lab_fee'];
+    
+    // Get fixed fees (excluding LAB since it's program-specific now)
+    $total_fixed_fee = 0;
+    $fee_breakdown = [];
+    
+    $res = db_query($conn, "SELECT * FROM fees WHERE type = 'fixed' AND code != 'LAB'");
+    while($row = $res->fetch_assoc()) {
+        $total_fixed_fee += floatval($row['amount']);
+        $fee_breakdown[] = [
+            'code' => $row['code'],
+            'description' => $row['description'],
+            'amount' => floatval($row['amount'])
+        ];
+    }
+    
+    // Add program-specific lab fee
+    $total_fixed_fee += $program_lab_fee;
+    $fee_breakdown[] = [
+        'code' => 'LAB',
+        'description' => 'Laboratory Fee (Program-specific)',
+        'amount' => $program_lab_fee
+    ];
+    
+    // Get units enrolled
+    $u_sql = "SELECT SUM(c.units) as total_units 
+              FROM enrollments e 
+              JOIN curriculum c ON e.curriculum_id = c.curriculum_id 
+              WHERE e.student_id = ? AND e.academic_year = ? AND c.semester = ? 
+              AND e.status IN ('Enrolled', 'Passed', 'Failed')";
+    $units_row = db_fetch_one(db_query($conn, $u_sql, 'isi', [$student_id, $ay, $sem]));
+    $units = $units_row ? floatval($units_row['total_units']) : 0;
+    
+    $tuition_amount = $units * $tuition_rate;
+    $misc_amount = $total_fixed_fee;
+    $gross_assessment = $tuition_amount + $misc_amount;
+    
+    // Get scholarship discounts
+    $scholarship_data = calculateScholarshipDiscount($conn, $student_id, $ay, $sem, $tuition_amount, $misc_amount);
+    $total_discount = $scholarship_data['total_discount'];
+    
+    $net_assessment = $gross_assessment - $total_discount;
+    
+    // Get payments
+    $pay_sql = "SELECT SUM(amount) as total_paid FROM payments WHERE student_id = ? AND academic_year = ? AND semester = ?";
+    $pay_row = db_fetch_one(db_query($conn, $pay_sql, 'isi', [$student_id, $ay, $sem]));
+    $total_paid = $pay_row ? floatval($pay_row['total_paid']) : 0;
+    
+    // Get applied overpayment credits
+    $credit_sql = "SELECT SUM(amount) as applied_credit FROM term_overpayments 
+                   WHERE student_id = ? AND applied_academic_year = ? AND applied_semester = ? AND is_applied = 1";
+    $credit_row = db_fetch_one(db_query($conn, $credit_sql, 'isi', [$student_id, $ay, $sem]));
+    $applied_credits = $credit_row && $credit_row['applied_credit'] ? floatval($credit_row['applied_credit']) : 0;
+    
+    // Get available overpayment credits (for display)
+    $available_credits = getAvailableOverpaymentCredit($conn, $student_id);
+    
+    // Get late fees (not waived)
+    $late_sql = "SELECT SUM(amount) as total_late FROM student_late_fees 
+                 WHERE student_id = ? AND academic_year = ? AND semester = ? AND is_waived = 0";
+    $late_row = db_fetch_one(db_query($conn, $late_sql, 'isi', [$student_id, $ay, $sem]));
+    $total_late_fees = $late_row ? floatval($late_row['total_late']) : 0;
+    
+    // Calculate pending late fee (not yet applied)
+    $pending_late = calculateLateFee($conn, $student_id, $ay, $sem);
+    
+    // Final balance (after payments and applied credits)
+    $balance = $net_assessment + $total_late_fees - $total_paid - $applied_credits;
+    
+    return [
+        'units' => $units,
+        'tuition_rate' => $tuition_rate,
+        'tuition_amount' => $tuition_amount,
+        'misc_amount' => $misc_amount,
+        'misc_breakdown' => $fee_breakdown,
+        'gross_assessment' => $gross_assessment,
+        'scholarships' => $scholarship_data['discounts'],
+        'total_discount' => $total_discount,
+        'net_assessment' => $net_assessment,
+        'total_paid' => $total_paid,
+        'applied_credits' => $applied_credits,
+        'available_credits' => $available_credits,
+        'applied_late_fees' => $total_late_fees,
+        'pending_late_fee' => $pending_late['late_fee'],
+        'balance' => $balance,
+        'total_due' => max(0, $balance + $pending_late['late_fee']),
+        'has_overpayment' => $balance < 0,
+        'overpayment_amount' => $balance < 0 ? abs($balance) : 0,
+        'status' => $balance <= 0 ? 'Paid' : ($pending_late['days_overdue'] > 0 ? 'Overdue' : 'Unpaid')
+    ];
+}
+?>
